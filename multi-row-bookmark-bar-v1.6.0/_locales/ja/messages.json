@@ -172,5 +172,29 @@
   },
   "pushOption": {
     "message": "ページを押し下げて常時表示"
+  },
+  "revealEdge": {
+    "message": "表示エリアの高さ (px)"
+  },
+  "revealEdgeDesc": {
+    "message": "画面上端から何pxにカーソルが来たら表示するか (1 - 50)"
+  },
+  "revealDelay": {
+    "message": "表示までの遅延 (ms)"
+  },
+  "revealDelayDesc": {
+    "message": "0 - 1000"
+  },
+  "autohideDelay": {
+    "message": "隠すまでの時間 (ms)"
+  },
+  "autohideDelayDesc": {
+    "message": "バーのエリアから外れてから (100 - 5000)"
+  },
+  "hideOnClick": {
+    "message": "ブックマークを開いたら隠す"
+  },
+  "hideOnOutsideClick": {
+    "message": "バーの外をクリックで隠す"
   }
 }

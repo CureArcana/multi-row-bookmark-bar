@@ -176,6 +176,48 @@
   <div class="section">
     <label>
       <div>
+        <div class="label-text" data-i18n="revealEdge">Reveal area height (px)</div>
+        <div class="label-desc" data-i18n="revealEdgeDesc">Show when cursor is within N px of the top (1 - 50)</div>
+      </div>
+      <input type="number" id="revealEdgePx" value="2" min="1" max="50" step="1">
+    </label>
+    <label>
+      <div>
+        <div class="label-text" data-i18n="revealDelay">Reveal delay (ms)</div>
+        <div class="label-desc" data-i18n="revealDelayDesc">0 - 1000</div>
+      </div>
+      <input type="number" id="revealDelayMs" value="0" min="0" max="1000" step="50">
+    </label>
+    <label>
+      <div>
+        <div class="label-text" data-i18n="autohideDelay">Hide delay (ms)</div>
+        <div class="label-desc" data-i18n="autohideDelayDesc">After leaving the bar area (100 - 5000)</div>
+      </div>
+      <input type="number" id="autohideDelayMs" value="400" min="100" max="5000" step="100">
+    </label>
+    <label>
+      <div>
+        <div class="label-text" data-i18n="hideOnClick">Hide after opening a bookmark</div>
+      </div>
+      <div class="toggle">
+        <input type="checkbox" id="hideOnClick" checked>
+        <span class="slider"></span>
+      </div>
+    </label>
+    <label>
+      <div>
+        <div class="label-text" data-i18n="hideOnOutsideClick">Hide when clicking outside</div>
+      </div>
+      <div class="toggle">
+        <input type="checkbox" id="hideOnOutsideClick" checked>
+        <span class="slider"></span>
+      </div>
+    </label>
+  </div>
+
+  <div class="section">
+    <label>
+      <div>
         <div class="label-text" data-i18n="barMode">Bar mode</div>
         <div class="label-desc" data-i18n="barModeDesc">Overflow = continue from hidden bookmarks</div>
       </div>
@@ -243,7 +285,7 @@
     </label>
   </div>
 
-  <div class="version">v2.0.0</div>
+  <div class="version">v2.1.0</div>
 
   <script src="popup.js"></script>
 </body>

@@ -632,6 +632,60 @@ try {
   });
   check("autohide: hides again after leaving", !rehidden.shown && rehidden.bottom <= 0, JSON.stringify(rehidden));
 
+  // --- autohide configs ---
+  const setAh = (patch) => sw.evaluate(async (p) => {
+    const data = await chrome.storage.sync.get("mrbb-settings");
+    const s = data["mrbb-settings"] || {};
+    Object.assign(s, p);
+    await chrome.storage.sync.set({ "mrbb-settings": s });
+  }, patch);
+
+  // revealEdgePx=30: y=25 で表示される / autohideDelayMs=1500: 800ms ではまだ表示
+  await setAh({ revealEdgePx: 30, autohideDelayMs: 1500 });
+  await sleep(600);
+  await page.mouse.move(400, 300);
+  await sleep(100);
+  await page.mouse.move(400, 25);
+  await sleep(300);
+  const wideEdge = await page.evaluate(() =>
+    document.getElementById("mrbb-host").classList.contains("mrbb-shown"));
+  check("config: revealEdgePx=30 reveals at y=25", wideEdge, String(wideEdge));
+  await page.mouse.move(500, 600);
+  await sleep(800);
+  const stillShown = await page.evaluate(() =>
+    document.getElementById("mrbb-host").classList.contains("mrbb-shown"));
+  await sleep(1100);
+  const hiddenLater = await page.evaluate(() =>
+    document.getElementById("mrbb-host").classList.contains("mrbb-shown"));
+  check("config: autohideDelayMs=1500 (shown at 800ms, hidden after)",
+    stillShown && !hiddenLater, JSON.stringify({ stillShown, hiddenLater }));
+
+  // hideOnOutsideClick: バー外クリックで即隠す
+  await setAh({ revealEdgePx: 2, autohideDelayMs: 5000, hideOnOutsideClick: true });
+  await sleep(600);
+  await page.mouse.move(400, 1);
+  await sleep(300);
+  await page.mouse.click(500, 500); // バー外クリック
+  await sleep(300);
+  const afterOutside = await page.evaluate(() =>
+    document.getElementById("mrbb-host").classList.contains("mrbb-shown"));
+  check("config: outside click hides instantly", !afterOutside, String(afterOutside));
+
+  // hideOnClick: ブックマーククリックで即隠す（ナビゲーションは抑止して検証）
+  await page.mouse.move(400, 1);
+  await sleep(300);
+  const afterLinkClick = await page.evaluate(async () => {
+    const sh = document.getElementById("mrbb-host").shadowRoot;
+    const link = sh.querySelector(".mrbb-item.mrbb-link");
+    link.addEventListener("click", (e) => e.preventDefault(), { once: true });
+    link.dispatchEvent(new MouseEvent("click", { bubbles: true, composed: true, cancelable: true }));
+    await new Promise(r => setTimeout(r, 200));
+    return document.getElementById("mrbb-host").classList.contains("mrbb-shown");
+  });
+  check("config: bookmark click hides instantly", !afterLinkClick, String(afterLinkClick));
+  await setAh({ autohideDelayMs: 400 });
+  await sleep(400);
+
   // --- everything fits -> bar disappears & page restored ---
   await sw.evaluate(async () => {
     const kids = await chrome.bookmarks.getChildren("1");

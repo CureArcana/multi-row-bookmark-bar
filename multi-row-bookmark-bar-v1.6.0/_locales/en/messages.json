@@ -172,5 +172,29 @@
   },
   "pushOption": {
     "message": "Push page down"
+  },
+  "revealEdge": {
+    "message": "Reveal area height (px)"
+  },
+  "revealEdgeDesc": {
+    "message": "Show when cursor is within N px of the top (1 - 50)"
+  },
+  "revealDelay": {
+    "message": "Reveal delay (ms)"
+  },
+  "revealDelayDesc": {
+    "message": "0 - 1000"
+  },
+  "autohideDelay": {
+    "message": "Hide delay (ms)"
+  },
+  "autohideDelayDesc": {
+    "message": "After leaving the bar area (100 - 5000)"
+  },
+  "hideOnClick": {
+    "message": "Hide after opening a bookmark"
+  },
+  "hideOnOutsideClick": {
+    "message": "Hide when clicking outside"
   }
 }

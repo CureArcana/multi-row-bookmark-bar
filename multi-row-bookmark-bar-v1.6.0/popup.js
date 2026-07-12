@@ -15,6 +15,11 @@
     boundaryOffsetPx: 0,
     hoverCloseMs: 400,
     displayBehavior: "autohide",
+    revealEdgePx: 2,
+    revealDelayMs: 0,
+    autohideDelayMs: 400,
+    hideOnClick: true,
+    hideOnOutsideClick: true,
   };
   const $ = (id) => document.getElementById(id);
 
@@ -28,6 +33,11 @@
     $("boundaryOffset").value = String(s.boundaryOffsetPx || 0);
     $("barMode").value = s.barMode;
     $("displayBehavior").value = s.displayBehavior || "autohide";
+    $("revealEdgePx").value = String(s.revealEdgePx ?? 2);
+    $("revealDelayMs").value = String(s.revealDelayMs ?? 0);
+    $("autohideDelayMs").value = String(s.autohideDelayMs ?? 400);
+    $("hideOnClick").checked = s.hideOnClick !== false;
+    $("hideOnOutsideClick").checked = s.hideOnOutsideClick !== false;
     $("displayMode").value = s.displayMode;
     $("folderOpenMode").value = s.folderOpenMode;
     $("hoverCloseMs").value = String(s.hoverCloseMs || 400);
@@ -44,6 +54,11 @@
       boundaryOffsetPx: Math.max(-600, Math.min(600, parseInt($("boundaryOffset").value, 10) || 0)),
       barMode: $("barMode").value,
       displayBehavior: $("displayBehavior").value,
+      revealEdgePx: Math.max(1, Math.min(50, parseInt($("revealEdgePx").value, 10) || 2)),
+      revealDelayMs: Math.max(0, Math.min(1000, parseInt($("revealDelayMs").value, 10) || 0)),
+      autohideDelayMs: Math.max(100, Math.min(5000, parseInt($("autohideDelayMs").value, 10) || 400)),
+      hideOnClick: $("hideOnClick").checked,
+      hideOnOutsideClick: $("hideOnOutsideClick").checked,
       displayMode: $("displayMode").value,
       folderOpenMode: $("folderOpenMode").value,
       hoverCloseMs: Math.max(100, Math.min(2000, parseInt($("hoverCloseMs").value, 10) || 400)),

@@ -15,6 +15,11 @@
     boundaryOffsetPx: 0,
     hoverCloseMs: 400,
     displayBehavior: "autohide",
+    revealEdgePx: 2,
+    revealDelayMs: 0,
+    autohideDelayMs: 400,
+    hideOnClick: true,
+    hideOnOutsideClick: true,
   };
 
   function mapBookmark(node) {

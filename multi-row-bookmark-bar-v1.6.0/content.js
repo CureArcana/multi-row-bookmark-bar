@@ -15,8 +15,14 @@
     boundaryOffsetPx: 0,  // ネイティブバー使用可能幅の手動補正(px)。+ = 手前から表示。
                           // px 保存なので並べ替えでどのブックマークが境界に来ても補正が安定する
     hoverCloseMs: 400,    // ホバー展開したフォルダを、カーソルが離れてから閉じるまでの時間(ms)
-    displayBehavior: "autohide" // "autohide": ページ無改変のオーバーレイ（上端ホバーで表示）
-                                // "push": ページを押し下げて常時表示（fixed要素補正あり）
+    displayBehavior: "autohide", // "autohide": ページ無改変のオーバーレイ（上端ホバーで表示）
+                                 // "push": ページを押し下げて常時表示（fixed要素補正あり）
+    // --- autohide の詳細設定 ---
+    revealEdgePx: 2,          // 画面上端から何 px 以内にカーソルが来たら表示するか
+    revealDelayMs: 0,         // 上端に触れてから表示するまでの遅延（誤爆防止）
+    autohideDelayMs: 400,     // エリアから外れてから隠すまでの時間
+    hideOnClick: true,        // バー内のブックマークを開いたら即座に隠す
+    hideOnOutsideClick: true  // バーの外をクリックしたら即座に隠す
   };
 
   // Chrome ネイティブバーの寸法モデル
@@ -78,6 +84,7 @@
   // Auto-hide state
   var autohideBound = false;
   var autohideTimer = null;
+  var revealTimer = null;
   var barShown = false;
 
   // ===== Helpers =====
@@ -862,7 +869,12 @@
       '<div class="mrbb-settings-row"><span>' + t("barMode") + '</span><select id="mrbb-bm-sel" style="border:1px solid #dadce0;border-radius:3px;padding:2px 4px;font-size:12px;"><option value="overflow"' + (settings.barMode === "overflow" ? " selected" : "") + '>' + t("overflowOnly") + '</option><option value="independent"' + (settings.barMode === "independent" ? " selected" : "") + '>' + t("allBookmarks") + '</option></select></div>' +
       '<div class="mrbb-settings-row"><span>' + t("displayBehavior") + '</span><select id="mrbb-db-sel" style="border:1px solid #dadce0;border-radius:3px;padding:2px 4px;font-size:12px;"><option value="autohide"' + (settings.displayBehavior !== "push" ? " selected" : "") + '>' + t("autohideOption") + '</option><option value="push"' + (settings.displayBehavior === "push" ? " selected" : "") + '>' + t("pushOption") + '</option></select></div>' +
       '<div class="mrbb-settings-row"><span>' + t("boundaryAdjust") + '</span><div class="mrbb-settings-fontsize"><button data-action="bo-dec" title="' + t("boundaryEarlier") + '">◀</button><span id="mrbb-bo-val">' + (settings.boundaryOffsetPx || 0) + 'px</span><button data-action="bo-inc" title="' + t("boundaryLater") + '">▶</button></div></div>' +
-      '<div class="mrbb-settings-row"><span>' + t("hoverCloseDelay") + '</span><div class="mrbb-settings-fontsize"><button data-action="hc-dec">-</button><span id="mrbb-hc-val">' + (settings.hoverCloseMs || 400) + 'ms</span><button data-action="hc-inc">+</button></div></div>';
+      '<div class="mrbb-settings-row"><span>' + t("hoverCloseDelay") + '</span><div class="mrbb-settings-fontsize"><button data-action="hc-dec">-</button><span id="mrbb-hc-val">' + (settings.hoverCloseMs || 400) + 'ms</span><button data-action="hc-inc">+</button></div></div>' +
+      '<div class="mrbb-settings-row"><span>' + t("revealEdge") + '</span><div class="mrbb-settings-fontsize"><button data-action="re-dec">-</button><span id="mrbb-re-val">' + (settings.revealEdgePx || 2) + 'px</span><button data-action="re-inc">+</button></div></div>' +
+      '<div class="mrbb-settings-row"><span>' + t("revealDelay") + '</span><div class="mrbb-settings-fontsize"><button data-action="rd-dec">-</button><span id="mrbb-rd-val">' + (settings.revealDelayMs || 0) + 'ms</span><button data-action="rd-inc">+</button></div></div>' +
+      '<div class="mrbb-settings-row"><span>' + t("autohideDelay") + '</span><div class="mrbb-settings-fontsize"><button data-action="ad-dec">-</button><span id="mrbb-ad-val">' + (settings.autohideDelayMs || 400) + 'ms</span><button data-action="ad-inc">+</button></div></div>' +
+      '<div class="mrbb-settings-row"><span>' + t("hideOnClick") + '</span><input type="checkbox" id="mrbb-hoc-chk"' + (settings.hideOnClick ? " checked" : "") + '></div>' +
+      '<div class="mrbb-settings-row"><span>' + t("hideOnOutsideClick") + '</span><input type="checkbox" id="mrbb-hooc-chk"' + (settings.hideOnOutsideClick ? " checked" : "") + '></div>';
 
     var gr = gearBtn.getBoundingClientRect();
     panel.style.top = fx(gr.bottom + 4);
@@ -907,6 +919,22 @@
     panel.querySelector('[data-action="hc-inc"]').addEventListener("click", function () {
       var v = Math.min(2000, (settings.hoverCloseMs || 400) + 100); settings.hoverCloseMs = v; saveSettings(); if (hcValEl) hcValEl.textContent = v + "ms";
     });
+    var bindStepper = function (decSel, incSel, valId, key, def, min, max, step, unit) {
+      var valEl = panel.querySelector(valId);
+      panel.querySelector(decSel).addEventListener("click", function () {
+        var v = Math.max(min, (settings[key] !== undefined ? settings[key] : def) - step);
+        settings[key] = v; saveSettings(); if (valEl) valEl.textContent = v + unit;
+      });
+      panel.querySelector(incSel).addEventListener("click", function () {
+        var v = Math.min(max, (settings[key] !== undefined ? settings[key] : def) + step);
+        settings[key] = v; saveSettings(); if (valEl) valEl.textContent = v + unit;
+      });
+    };
+    bindStepper('[data-action="re-dec"]', '[data-action="re-inc"]', "#mrbb-re-val", "revealEdgePx", 2, 1, 50, 2, "px");
+    bindStepper('[data-action="rd-dec"]', '[data-action="rd-inc"]', "#mrbb-rd-val", "revealDelayMs", 0, 0, 1000, 50, "ms");
+    bindStepper('[data-action="ad-dec"]', '[data-action="ad-inc"]', "#mrbb-ad-val", "autohideDelayMs", 400, 100, 5000, 100, "ms");
+    panel.querySelector("#mrbb-hoc-chk").addEventListener("change", function (e) { settings.hideOnClick = e.target.checked; saveSettings(); });
+    panel.querySelector("#mrbb-hooc-chk").addEventListener("change", function (e) { settings.hideOnOutsideClick = e.target.checked; saveSettings(); });
     panel.querySelector("#mrbb-mr-inp").addEventListener("change", function (e) { settings.maxRows = parseInt(e.target.value, 10) || 0; saveSettings(); });
     panel.querySelector("#mrbb-fo-sel").addEventListener("change", function (e) { settings.folderOpenMode = e.target.value; saveSettings(); });
     panel.querySelector("#mrbb-bm-sel").addEventListener("change", function (e) { settings.barMode = e.target.value; saveSettings(); });
@@ -1016,20 +1044,41 @@
   }
   function scheduleHide() {
     clearTimeout(autohideTimer);
-    autohideTimer = setTimeout(hideBar, settings.hoverCloseMs || 400);
+    autohideTimer = setTimeout(hideBar, settings.autohideDelayMs || 400);
   }
   function cancelHide() { clearTimeout(autohideTimer); autohideTimer = null; }
+  function cancelReveal() { if (revealTimer) { clearTimeout(revealTimer); revealTimer = null; } }
+
+  // ブックマークを開いた時などの即時格納（ドロップダウン等が開いていても隠す）
+  function forceHideBar() {
+    cancelHide();
+    cancelReveal();
+    if (!hostEl || !barShown) return;
+    barShown = false;
+    hostEl.classList.remove("mrbb-shown");
+    closeDropdown(true);
+    closeContextMenu();
+  }
 
   function bindAutohide() {
     if (autohideBound) return;
     autohideBound = true;
     document.addEventListener("mousemove", function (e) {
       if (!isAutohide() || !hostEl) return;
-      var edge = 2;
+      var edge = Math.max(1, settings.revealEdgePx || 2);
       var barBottom = (barHeightPx / (currentZoom || 1)) + 24;
-      if (e.clientY <= edge) { cancelHide(); showBar(); }
-      else if (barShown && e.clientY > barBottom && !autohideTimer) scheduleHide();
-      else if (barShown && e.clientY <= barBottom) cancelHide();
+      if (e.clientY <= edge) {
+        cancelHide();
+        if (!barShown && !revealTimer) {
+          var d = settings.revealDelayMs || 0;
+          if (d <= 0) showBar();
+          else revealTimer = setTimeout(function () { revealTimer = null; showBar(); }, d);
+        }
+      } else {
+        cancelReveal();
+        if (barShown && e.clientY > barBottom && !autohideTimer) scheduleHide();
+        else if (barShown && e.clientY <= barBottom) cancelHide();
+      }
     }, true);
     // ドラッグ中も上端で出す（バー間D&D用）。ページ側へ離れたら隠す
     document.addEventListener("dragover", function (e) {
@@ -1037,6 +1086,29 @@
       var barBottom = (barHeightPx / (currentZoom || 1)) + 24;
       if (e.clientY <= Math.max(40, barBottom)) { cancelHide(); showBar(); }
       else if (barShown) scheduleHide();
+    }, true);
+    // バー外クリックで即隠す
+    document.addEventListener("mousedown", function (e) {
+      if (!isAutohide() || !barShown || !settings.hideOnOutsideClick) return;
+      var path = e.composedPath ? e.composedPath() : [e.target];
+      if (hostEl && path.indexOf(hostEl) !== -1) return;
+      // 先にドロップダウン/パネル側の外側クリック処理を済ませてから隠す
+      setTimeout(hideBar, 0);
+    }, true);
+    // バー内のブックマーク（リンク）を開いたら即隠す
+    document.addEventListener("click", function (e) {
+      if (!isAutohide() || !barShown || !settings.hideOnClick) return;
+      var path = e.composedPath ? e.composedPath() : [];
+      for (var i = 0; i < path.length; i++) {
+        var el = path[i];
+        if (!el || !el.classList) continue;
+        if (el.classList.contains("mrbb-link") ||
+            el.classList.contains("mrbb-search-result-row") ||
+            (el.classList.contains("mrbb-dropdown-row") && !el.classList.contains("mrbb-dropdown-folder"))) {
+          forceHideBar();
+          return;
+        }
+      }
     }, true);
   }
 
