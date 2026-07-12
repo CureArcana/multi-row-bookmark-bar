@@ -1,0 +1,264 @@
+/* =========================================
+   Multi-Row Bookmark Bar v1.6.0
+   Shadow DOM 完全隔離 — ページCSS影響ゼロ
+   overflow方式: ネイティブバーに収まらない分を続きとして描画
+   見た目は Chrome ネイティブバー (GM3) と同一に揃える
+   ========================================= */
+
+/* Host (ページDOM側 → !important 必須) */
+:host {
+  --mrbb-font-size: 12px;
+  --mrbb-bar-height: 36px;
+  --mrbb-item-height: 28px;
+  /* GM3 カラートークン（Chrome 150 ネイティブバーの実測値: bg=白, text=#474747, 境界=#e1e3e1） */
+  --mrbb-bg: #ffffff;
+  --mrbb-text: #474747;
+  --mrbb-icon: #474747;
+  --mrbb-hover: rgba(31, 31, 31, 0.08);
+  --mrbb-active: rgba(31, 31, 31, 0.12);
+  --mrbb-border: #e1e3e1;
+  --mrbb-menu-bg: #ffffff;
+  --mrbb-menu-text: #1f1f1f;
+  --mrbb-menu-hover: #f0f0f0;
+  --mrbb-menu-border: #dadce0;
+  --mrbb-accent: #0b57d0;
+  /* Layout (must override page) */
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 2147483646 !important;
+  display: block !important;
+  width: 100% !important;
+  overflow: visible !important;
+  box-sizing: border-box !important;
+  margin: 0 !important; padding: 0 !important;
+  /* Visual */
+  background: var(--mrbb-bg) !important;
+  border-bottom: 1px solid var(--mrbb-border) !important;
+  color: var(--mrbb-text) !important;
+  /* CRITICAL: Block ALL inherited text properties from <html>/<body> */
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif !important;
+  font-size: var(--mrbb-font-size) !important;
+  font-weight: normal !important;
+  font-style: normal !important;
+  font-variant: normal !important;
+  line-height: normal !important;
+  letter-spacing: normal !important;
+  word-spacing: normal !important;
+  text-transform: none !important;
+  text-indent: 0 !important;
+  text-align: left !important;
+  text-decoration: none !important;
+  white-space: normal !important;
+  direction: ltr !important;
+  -webkit-text-size-adjust: none !important;
+  text-size-adjust: none !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  filter: none !important;
+}
+
+/* === Shadow DOM 内部 (!important 不要) === */
+#mrbb-root { width: 100%; }
+
+.mrbb-row {
+  display: flex; flex-wrap: nowrap; align-items: center;
+  height: var(--mrbb-bar-height); padding: 0 8px;
+  gap: 2px; margin: 0; background: transparent;
+  box-sizing: border-box; width: 100%;
+}
+
+/* アイテム: Chrome ネイティブと同じ pad 8px / gap 6px / 間隔 2px / radius 8px */
+.mrbb-item {
+  display: inline-flex; align-items: center;
+  gap: 6px; height: var(--mrbb-item-height);
+  padding: 0 8px; border-radius: 8px;
+  text-decoration: none; color: var(--mrbb-text);
+  white-space: nowrap; cursor: default;
+  transition: background-color 0.1s; flex-shrink: 0;
+  line-height: 1;
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  font-size: var(--mrbb-font-size);
+  background: transparent; border: none; margin: 0;
+  box-sizing: border-box;
+}
+.mrbb-item:hover { background: var(--mrbb-hover); }
+.mrbb-item:active { background: var(--mrbb-active); }
+
+.mrbb-favicon {
+  width: 16px; height: 16px; flex-shrink: 0;
+  pointer-events: none; border-radius: 2px;
+  border: none; padding: 0; margin: 0;
+}
+
+/* フォルダアイコン: Chrome ネイティブと同じモノクロ塗りつぶしフォルダ (GM3) */
+.mrbb-folder-icon {
+  width: 16px; height: 16px; flex-shrink: 0;
+  pointer-events: none; display: inline-block;
+  background: var(--mrbb-icon);
+  -webkit-mask: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 20q-.825 0-1.412-.587Q2 18.825 2 18V6q0-.825.588-1.412Q3.175 4 4 4h6l2 2h8q.825 0 1.413.588Q22 7.175 22 8v10q0 .825-.587 1.413Q20.825 20 20 20Z"/></svg>') center / 16px 16px no-repeat;
+  mask: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 20q-.825 0-1.412-.587Q2 18.825 2 18V6q0-.825.588-1.412Q3.175 4 4 4h6l2 2h8q.825 0 1.413.588Q22 7.175 22 8v10q0 .825-.587 1.413Q20.825 20 20 20Z"/></svg>') center / 16px 16px no-repeat;
+}
+
+.mrbb-title {
+  max-width: 150px; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap;
+  font-size: var(--mrbb-font-size);
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  line-height: 1; pointer-events: none;
+  text-decoration: none; color: inherit;
+}
+
+.mrbb-item.mrbb-dragging { opacity: 0.4; }
+.mrbb-folder-drop-target {
+  background: rgba(11, 87, 208, 0.15) !important;
+  outline: 2px solid var(--mrbb-accent);
+  outline-offset: -2px; border-radius: 8px;
+}
+
+/* D&D インジケーター: Chrome ネイティブと同じシンプルな青い縦線 */
+.mrbb-drop-indicator {
+  position: fixed; width: 2px; background: var(--mrbb-accent);
+  border-radius: 1px; pointer-events: none; z-index: 2147483647;
+}
+
+/* Dropdown: Chrome のフォルダメニュー風 */
+.mrbb-dropdown {
+  position: fixed; background: var(--mrbb-menu-bg);
+  border: 1px solid var(--mrbb-menu-border); border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15), 0 1px 2px rgba(0,0,0,0.1);
+  padding: 4px 0; min-width: 180px; max-width: 300px;
+  max-height: 400px; overflow-y: auto; z-index: 2147483647;
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  font-size: 12px; color: var(--mrbb-menu-text);
+}
+.mrbb-dropdown-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 12px; text-decoration: none; color: var(--mrbb-menu-text);
+  cursor: default; transition: background-color 0.1s;
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif; font-size: 12px;
+}
+.mrbb-dropdown-row:hover { background: var(--mrbb-menu-hover); }
+.mrbb-dropdown-icon { width: 16px; height: 16px; flex-shrink: 0; border-radius: 2px; }
+.mrbb-dropdown-text {
+  flex: 1; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; font-size: 12px; line-height: 1.2;
+}
+.mrbb-dropdown-arrow { font-size: 8px; color: var(--mrbb-text); margin-left: auto; flex-shrink: 0; }
+.mrbb-dropdown-empty { padding: 8px 12px; color: #9aa0a6; font-style: italic; font-size: 12px; }
+
+/* Context Menu */
+.mrbb-context-menu {
+  position: fixed; background: var(--mrbb-menu-bg);
+  border: 1px solid var(--mrbb-menu-border); border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15), 0 1px 2px rgba(0,0,0,0.1);
+  padding: 4px 0; min-width: 200px; z-index: 2147483647;
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  font-size: 12px; color: var(--mrbb-menu-text);
+}
+.mrbb-context-item {
+  padding: 6px 24px; cursor: default; color: var(--mrbb-menu-text);
+  white-space: nowrap; transition: background-color 0.1s;
+}
+.mrbb-context-item:hover { background: var(--mrbb-menu-hover); }
+.mrbb-context-separator { height: 1px; margin: 4px 0; background: var(--mrbb-menu-border); }
+
+/* Gear */
+.mrbb-gear-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: var(--mrbb-item-height); flex-shrink: 0;
+  cursor: default; opacity: 0.5; transition: opacity 0.15s;
+  margin-right: 2px; background: transparent; border: none; padding: 0;
+  color: var(--mrbb-icon);
+}
+.mrbb-gear-btn:hover { opacity: 1; }
+.mrbb-gear-btn svg { pointer-events: none; }
+
+/* Settings Panel */
+.mrbb-settings-panel {
+  position: fixed; background: var(--mrbb-menu-bg); border: 1px solid var(--mrbb-menu-border);
+  border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  padding: 12px 16px; min-width: 240px;
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  font-size: 13px; color: var(--mrbb-menu-text); z-index: 2147483647;
+}
+.mrbb-settings-title { font-weight: 600; font-size: 14px; margin-bottom: 10px; }
+.mrbb-settings-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; gap: 12px; }
+.mrbb-settings-row span { color: var(--mrbb-menu-text); font-size: 13px; }
+.mrbb-settings-fontsize { display: flex; align-items: center; gap: 6px; }
+.mrbb-settings-fontsize button {
+  width: 24px; height: 24px; border: 1px solid var(--mrbb-menu-border); border-radius: 4px;
+  background: var(--mrbb-menu-bg); cursor: pointer; font-size: 14px; font-weight: 600; color: var(--mrbb-menu-text);
+  display: flex; align-items: center; justify-content: center; transition: background 0.1s;
+}
+.mrbb-settings-fontsize button:hover { background: var(--mrbb-menu-hover); }
+.mrbb-settings-fontsize span { min-width: 36px; text-align: center; font-size: 13px; }
+
+/* Search */
+.mrbb-search-container {
+  display: inline-flex; align-items: center;
+  margin-left: auto; flex-shrink: 0; position: relative;
+}
+.mrbb-search-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: var(--mrbb-item-height); flex-shrink: 0;
+  cursor: default; opacity: 0.5; transition: opacity 0.15s;
+  background: transparent; border: none; padding: 0;
+  color: var(--mrbb-icon);
+}
+.mrbb-search-btn:hover { opacity: 1; }
+.mrbb-search-btn svg { pointer-events: none; }
+.mrbb-search-input {
+  width: 0; padding: 0; border: none; outline: none;
+  font-size: 12px; font-family: "Segoe UI", system-ui, sans-serif;
+  background: transparent; color: var(--mrbb-text);
+  transition: width 0.2s ease, padding 0.2s ease;
+  height: 24px; border-radius: 4px; box-sizing: border-box;
+}
+.mrbb-search-input.mrbb-search-open {
+  width: 160px; padding: 0 8px; border: 1px solid var(--mrbb-menu-border); background: var(--mrbb-menu-bg);
+}
+.mrbb-search-results {
+  position: fixed; background: var(--mrbb-menu-bg); border: 1px solid var(--mrbb-menu-border);
+  border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  padding: 4px 0; min-width: 250px; max-width: 400px;
+  max-height: 300px; overflow-y: auto; z-index: 2147483647;
+  font-family: "Segoe UI", system-ui, sans-serif; font-size: 12px;
+  color: var(--mrbb-menu-text);
+}
+.mrbb-search-result-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 12px; text-decoration: none; color: var(--mrbb-menu-text);
+  cursor: default; transition: background-color 0.1s;
+}
+.mrbb-search-result-row:hover { background: var(--mrbb-menu-hover); }
+.mrbb-search-result-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mrbb-search-result-url { font-size: 11px; color: #5f6368; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px; }
+.mrbb-search-empty { padding: 8px 12px; color: #9aa0a6; font-style: italic; font-size: 12px; }
+
+.mrbb-dropdown::-webkit-scrollbar { width: 6px; }
+.mrbb-dropdown::-webkit-scrollbar-thumb { background: #dadce0; border-radius: 3px; }
+.mrbb-dropdown::-webkit-scrollbar-thumb:hover { background: #bdc1c6; }
+
+/* GM3 dark theme（Chrome ダークモードのネイティブバーに合わせる） */
+@media (prefers-color-scheme: dark) {
+  :host {
+    --mrbb-bg: #282828;
+    --mrbb-text: #c7c7c7;
+    --mrbb-icon: #c7c7c7;
+    --mrbb-hover: rgba(232, 232, 232, 0.1);
+    --mrbb-active: rgba(232, 232, 232, 0.16);
+    --mrbb-border: rgba(255, 255, 255, 0.1);
+    --mrbb-menu-bg: #1f1f1f;
+    --mrbb-menu-text: #e3e3e3;
+    --mrbb-menu-hover: #37393b;
+    --mrbb-menu-border: #444746;
+    --mrbb-accent: #a8c7fa;
+  }
+  .mrbb-search-result-url { color: #9aa0a6; }
+  .mrbb-dropdown::-webkit-scrollbar-thumb { background: #444746; }
+  .mrbb-dropdown::-webkit-scrollbar-thumb:hover { background: #5f6368; }
+}

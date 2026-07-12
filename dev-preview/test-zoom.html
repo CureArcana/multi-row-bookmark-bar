@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>MRBB Zoom Test</title>
+<style>
+body { margin: 0; font-family: sans-serif; display: flex; flex-direction: column; gap: 4px; background: #333; }
+.site-frame { background: #fff; border: 2px solid #1a73e8; position: relative; }
+.site-label {
+  position: absolute; top: 2px; right: 8px; z-index: 999999;
+  background: #1a73e8; color: #fff; padding: 2px 8px; border-radius: 0 0 4px 4px;
+  font-size: 11px; font-weight: bold;
+}
+iframe { width: 100%; border: none; display: block; }
+</style>
+</head>
+<body>
+  <div class="site-frame">
+    <div class="site-label">100% zoom (GitHub風)</div>
+    <iframe src="test-site-100.html" style="height:160px;"></iframe>
+  </div>
+  <div class="site-frame">
+    <div class="site-label">110% zoom (wikiwiki風)</div>
+    <iframe src="test-site-110.html" style="height:160px;"></iframe>
+  </div>
+  <div class="site-frame">
+    <div class="site-label">125% zoom (danbooru風)</div>
+    <iframe src="test-site-125.html" style="height:160px;"></iframe>
+  </div>
+</body>
+</html>

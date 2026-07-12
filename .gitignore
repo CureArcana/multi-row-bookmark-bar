@@ -1,0 +1,19 @@
+node_modules/
+dist/
+dist2/
+dist-out/
+*.log
+.DS_Store
+
+# 作業中の一時フォルダ・壊れた名前のリリースZIP
+temp_v130/
+mrbb143/
+zi*
+__pycache__/
+
+# テスト成果物
+test/*.png
+
+# テスト実行時のスクリーンショット
+mrbb-*.png
+cal-*.png
