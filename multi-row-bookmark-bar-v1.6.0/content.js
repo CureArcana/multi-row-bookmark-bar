@@ -952,9 +952,19 @@
       if (isNaN(top) || top < 0 || top >= barPx) continue;
       var rect = el.getBoundingClientRect();
       if (rect.height === 0 || rect.top >= barPx) continue; // 非表示 or 既にバーより下
-      fixedAdjusted.push({ el: el, original: el.style.top });
+      var rec = { el: el, original: el.style.top, originalMaxHeight: null };
       el.setAttribute(FIXED_MARK, "1");
       el.style.setProperty("top", (top + barPx) + "px", "important");
+      // 100vh 等のフルハイト要素は押し下げると下端が画面外にはみ出し、
+      // 最下部の UI（例: X の左ナビのアカウントボタン）が見えなくなる。
+      // top 適用後に実測し、はみ出す場合だけ max-height で画面内に収める
+      // （bottom 固定の要素は top 変更で自動的に縮むので実測ならキャップされない）
+      var after = el.getBoundingClientRect();
+      if (after.bottom > window.innerHeight + 2 && after.top < window.innerHeight) {
+        rec.originalMaxHeight = el.style.maxHeight || "";
+        el.style.setProperty("max-height", Math.max(100, window.innerHeight - after.top) + "px", "important");
+      }
+      fixedAdjusted.push(rec);
     }
   }
 
@@ -964,6 +974,10 @@
       if (!rec.el.isConnected) continue;
       if (rec.original) rec.el.style.top = rec.original;
       else rec.el.style.removeProperty("top");
+      if (rec.originalMaxHeight !== null) {
+        if (rec.originalMaxHeight) rec.el.style.maxHeight = rec.originalMaxHeight;
+        else rec.el.style.removeProperty("max-height");
+      }
       rec.el.removeAttribute(FIXED_MARK);
     }
     fixedAdjusted = [];

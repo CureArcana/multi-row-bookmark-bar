@@ -15,9 +15,15 @@ const server = http.createServer((req, res) => {
     #fixed-header { position: fixed; top: 0; left: 0; right: 0; height: 50px;
       background: steelblue; color: #fff; z-index: 100; }
     #sticky-nav { position: sticky; top: 0; background: seagreen; color: #fff; height: 30px; }
-    main { padding-top: 50px; }
+    /* X の左ナビと同型: フルハイト固定カラム + 最下部に UI */
+    #fixed-sidebar { position: fixed; top: 0; left: 0; width: 60px; height: 100vh;
+      background: #333; z-index: 90; }
+    #sidebar-account { position: absolute; bottom: 0; left: 0; width: 60px; height: 40px;
+      background: gold; }
+    main { padding: 50px 0 0 70px; }
   </style></head>
   <body><div id="fixed-header">Fixed header</div>
+  <div id="fixed-sidebar"><div id="sidebar-account">acct</div></div>
   <main><h1 id="top">Page top content</h1><div id="sticky-nav">Sticky nav</div>
   <p>${"lorem ".repeat(800)}</p></main></body></html>`);
 });
@@ -129,6 +135,18 @@ try {
     `headerTop=${info.fixedHeaderTop} bar=${info.hostHeight}`);
   check("page content not hidden", info.pageTopVisible >= info.hostHeight,
     `contentTop=${info.pageTopVisible}`);
+
+  // --- full-height fixed sidebar: bottom UI stays inside the viewport ---
+  const sidebar = await page.evaluate(() => {
+    const sb = document.getElementById("fixed-sidebar").getBoundingClientRect();
+    const acct = document.getElementById("sidebar-account").getBoundingClientRect();
+    return { sbTop: sb.top, sbBottom: sb.bottom, acctBottom: acct.bottom, vh: window.innerHeight };
+  });
+  check("full-height sidebar pushed below bar", Math.abs(sidebar.sbTop - info.hostHeight) < 1,
+    `top=${sidebar.sbTop} bar=${info.hostHeight}`);
+  check("sidebar bottom UI visible (max-height capped)",
+    sidebar.acctBottom <= sidebar.vh + 1 && sidebar.sbBottom <= sidebar.vh + 1,
+    JSON.stringify(sidebar));
 
   // --- folder dropdown ---
   const folderBox = await page.evaluate(() => {
