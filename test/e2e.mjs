@@ -200,27 +200,56 @@ try {
   check("D&D indicator at item boundary (no offset)", dndCheck.diff !== undefined && dndCheck.diff < 2,
     JSON.stringify(dndCheck));
 
-  // --- boundary offset: -2 shows 2 more items in ext bar ---
+  // --- boundary offset (px): +400px reserve shows 2 more items (each ~190px) ---
   await page.setViewport({ width: 1280, height: 900 });
   await sleep(500);
   const baseFirst = await page.evaluate(() =>
     parseInt(document.getElementById("mrbb-host").shadowRoot.querySelector(".mrbb-item").dataset.bmIndex, 10)
   );
-  const setOffset = (v) => sw.evaluate(async (val) => {
+  const setOffsetPx = (v) => sw.evaluate(async (val) => {
     const data = await chrome.storage.sync.get("mrbb-settings");
     const s = data["mrbb-settings"] || {};
-    s.boundaryOffset = val;
+    s.boundaryOffsetPx = val;
     await chrome.storage.sync.set({ "mrbb-settings": s });
   }, v);
-  await setOffset(-2);
+  await setOffsetPx(400);
   await sleep(800);
   const offsetFirst = await page.evaluate(() =>
     parseInt(document.getElementById("mrbb-host").shadowRoot.querySelector(".mrbb-item").dataset.bmIndex, 10)
   );
-  check("boundaryOffset -2 starts 2 items earlier", offsetFirst === baseFirst - 2,
+  check("boundaryOffsetPx 400 starts 2 items earlier", offsetFirst === baseFirst - 2,
     `base=${baseFirst} offset=${offsetFirst}`);
-  await setOffset(0);
+  await setOffsetPx(0);
   await sleep(500);
+
+  // --- gear ◀: one click = one bookmark earlier (px stored = item width) ---
+  const gearRect2 = await page.evaluate(() => {
+    const sh = document.getElementById("mrbb-host").shadowRoot;
+    const g = sh.querySelector(".mrbb-gear-btn").getBoundingClientRect();
+    return { x: g.x + g.width / 2, y: g.y + g.height / 2 };
+  });
+  await page.mouse.click(gearRect2.x, gearRect2.y);
+  await sleep(300);
+  const boDecRect = await page.evaluate(() => {
+    const b = document.getElementById("mrbb-host").shadowRoot.querySelector('[data-action="bo-dec"]');
+    const r = b.getBoundingClientRect();
+    return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+  });
+  await page.mouse.click(boDecRect.x, boDecRect.y);
+  await sleep(800);
+  const afterDec = await page.evaluate(() => {
+    const sh = document.getElementById("mrbb-host").shadowRoot;
+    return {
+      first: parseInt(sh.querySelector(".mrbb-item").dataset.bmIndex, 10),
+      label: sh.querySelector("#mrbb-bo-val")?.textContent ?? null,
+    };
+  });
+  check("gear ◀ click shifts boundary exactly 1 item earlier",
+    afterDec.first === baseFirst - 1 && /px$/.test(afterDec.label || ""),
+    JSON.stringify({ base: baseFirst, ...afterDec }));
+  await setOffsetPx(0);
+  await page.mouse.click(640, 600);
+  await sleep(400);
 
   // --- dropdown height: extends to viewport bottom, scrolls only when needed ---
   await sw.evaluate(async () => {

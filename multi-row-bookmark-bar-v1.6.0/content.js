@@ -11,7 +11,9 @@
     folderOpenMode: "hover", showCondition: "always",
     fontSize: 12, barHeight: 36,
     barMode: "overflow", // "overflow": ネイティブバーの続きから / "independent": 全ブックマークを描画
-    boundaryOffset: 0   // ネイティブバー収容数の手動補正（-5〜+5 アイテム）
+    boundaryOffset: 0,    // (旧) アイテム数補正 — boundaryOffsetPx へ移行済み
+    boundaryOffsetPx: 0   // ネイティブバー使用可能幅の手動補正(px)。+ = 手前から表示。
+                          // px 保存なので並べ替えでどのブックマークが境界に来ても補正が安定する
   };
 
   // Chrome ネイティブバーの寸法モデル
@@ -46,6 +48,7 @@
   var barHeightPx = 0;
   var hasOtherBookmarks = false;
   var tabGroupTitles = [];
+  var lastOverflowInfo = null; // {k, widths, n}: ギアパネルの◀▶が境界アイテムの実幅を知るため
   var originalBodyMarginTop = null;
   var fixedAdjusted = [];   // [{el, original}]
   var fixedObserver = null;
@@ -162,10 +165,13 @@
     var gearW = 24, searchW = 24;
     var extAvail = windowWidth - 16; // BAR_MARGIN_X * 2
 
-    // ネイティブバーの幅を消費する要素をすべて差し引く
+    // ネイティブバーの幅を消費する要素をすべて差し引く。
+    // boundaryOffsetPx は環境差（Chrome UIフォント設定・アプリショートカット・
+    // 未検出のチップ等）の手動補正。px 保存なので並べ替えに対して安定
     var reserved = NATIVE.leftMargin + NATIVE.rightMargin +
       tabGroupChipsWidth() +
-      (hasOtherBookmarks ? otherBookmarksLabelWidth() : 0);
+      (hasOtherBookmarks ? otherBookmarksLabelWidth() : 0) +
+      (sett.boundaryOffsetPx || 0);
     var nativeFull = windowWidth - reserved;
     var nativeWidths = bookmarks.map(calcNativeItemWidth);
     var total = nativeWidths.reduce(function (a, b) { return a + b; }, 0);
@@ -183,8 +189,7 @@
         k++;
       }
     }
-    // 手動補正（環境差: Chrome UIフォント設定・アプリショートカット・未検出のチップ等）
-    k = Math.max(0, Math.min(bookmarks.length, k + (sett.boundaryOffset || 0)));
+    lastOverflowInfo = { k: k, widths: nativeWidths, n: bookmarks.length };
     if (k >= bookmarks.length) return []; // オーバーフロー無し → 拡張バー不要
 
     var result = [];
@@ -806,7 +811,7 @@
       '<div class="mrbb-settings-row"><span>' + t("maxRows") + '</span><input type="number" id="mrbb-mr-inp" value="' + settings.maxRows + '" min="0" max="20" style="width:48px;text-align:center;border:1px solid #dadce0;border-radius:3px;padding:2px 4px;font-size:12px;"></div>' +
       '<div class="mrbb-settings-row"><span>' + t("folderOpen") + '</span><select id="mrbb-fo-sel" style="border:1px solid #dadce0;border-radius:3px;padding:2px 4px;font-size:12px;"><option value="hover"' + (settings.folderOpenMode === "hover" ? " selected" : "") + '>' + t("hover") + '</option><option value="click"' + (settings.folderOpenMode === "click" ? " selected" : "") + '>' + t("click") + '</option></select></div>' +
       '<div class="mrbb-settings-row"><span>' + t("barMode") + '</span><select id="mrbb-bm-sel" style="border:1px solid #dadce0;border-radius:3px;padding:2px 4px;font-size:12px;"><option value="overflow"' + (settings.barMode === "overflow" ? " selected" : "") + '>' + t("overflowOnly") + '</option><option value="independent"' + (settings.barMode === "independent" ? " selected" : "") + '>' + t("allBookmarks") + '</option></select></div>' +
-      '<div class="mrbb-settings-row"><span>' + t("boundaryAdjust") + '</span><div class="mrbb-settings-fontsize"><button data-action="bo-dec" title="' + t("boundaryEarlier") + '">◀</button><span id="mrbb-bo-val">' + (settings.boundaryOffset || 0) + '</span><button data-action="bo-inc" title="' + t("boundaryLater") + '">▶</button></div></div>';
+      '<div class="mrbb-settings-row"><span>' + t("boundaryAdjust") + '</span><div class="mrbb-settings-fontsize"><button data-action="bo-dec" title="' + t("boundaryEarlier") + '">◀</button><span id="mrbb-bo-val">' + (settings.boundaryOffsetPx || 0) + 'px</span><button data-action="bo-inc" title="' + t("boundaryLater") + '">▶</button></div></div>';
 
     var gr = gearBtn.getBoundingClientRect();
     panel.style.top = fx(gr.bottom + 4);
@@ -827,12 +832,22 @@
     panel.querySelector('[data-action="bh-inc"]').addEventListener("click", function () {
       var v = Math.min(60, (settings.barHeight || 36) + 2); settings.barHeight = v; saveSettings(); if (bhValEl) bhValEl.textContent = v + "px";
     });
+    // ◀▶ は境界に今いるアイテムの実幅ぶんだけ px を増減する。
+    // 「1クリック = 1ブックマーク」の操作感のまま、保存値は px なので
+    // ブックマークを並べ替えても補正が安定する
     var boValEl = panel.querySelector("#mrbb-bo-val");
+    var updateBoLabel = function () { if (boValEl) boValEl.textContent = (settings.boundaryOffsetPx || 0) + "px"; };
     panel.querySelector('[data-action="bo-dec"]').addEventListener("click", function () {
-      var v = Math.max(-5, (settings.boundaryOffset || 0) - 1); settings.boundaryOffset = v; saveSettings(); if (boValEl) boValEl.textContent = v;
+      var info = lastOverflowInfo;
+      var step = (info && info.k > 0) ? info.widths[info.k - 1] : 80;
+      settings.boundaryOffsetPx = Math.max(-600, Math.min(600, (settings.boundaryOffsetPx || 0) + step));
+      saveSettings(); updateBoLabel();
     });
     panel.querySelector('[data-action="bo-inc"]').addEventListener("click", function () {
-      var v = Math.min(5, (settings.boundaryOffset || 0) + 1); settings.boundaryOffset = v; saveSettings(); if (boValEl) boValEl.textContent = v;
+      var info = lastOverflowInfo;
+      var step = (info && info.k < info.n) ? info.widths[info.k] : 80;
+      settings.boundaryOffsetPx = Math.max(-600, Math.min(600, (settings.boundaryOffsetPx || 0) - step));
+      saveSettings(); updateBoLabel();
     });
     panel.querySelector("#mrbb-mr-inp").addEventListener("change", function (e) { settings.maxRows = parseInt(e.target.value, 10) || 0; saveSettings(); });
     panel.querySelector("#mrbb-fo-sel").addEventListener("change", function (e) { settings.folderOpenMode = e.target.value; saveSettings(); });
@@ -1107,7 +1122,15 @@
   async function loadSettings() {
     try {
       var data = await chrome.storage.sync.get(STORAGE_KEY);
-      return Object.assign({}, DEFAULT_SETTINGS, data[STORAGE_KEY] || {});
+      var raw = data[STORAGE_KEY] || {};
+      var s = Object.assign({}, DEFAULT_SETTINGS, raw);
+      // 旧アイテム数補正 → px 補正へ移行（平均アイテム幅 80px で換算）
+      if (raw.boundaryOffset && raw.boundaryOffsetPx === undefined) {
+        s.boundaryOffsetPx = -raw.boundaryOffset * 80;
+        s.boundaryOffset = 0;
+        chrome.storage.sync.set({ [STORAGE_KEY]: s });
+      }
+      return s;
     } catch (e) { return Object.assign({}, DEFAULT_SETTINGS); }
   }
 

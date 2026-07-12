@@ -40,7 +40,7 @@
   "boundaryAdjust": { "message": "Start position" },
   "boundaryEarlier": { "message": "Start one bookmark earlier" },
   "boundaryLater": { "message": "Start one bookmark later" },
-  "boundaryOffsetDesc": { "message": "Shift start position (- = earlier)" },
+  "boundaryOffsetDesc": { "message": "Reserve adjustment in px (+ = start earlier)" },
   "enabled": { "message": "Enabled" },
   "displayMode": { "message": "Display mode" },
   "iconText": { "message": "Icon + Text" },

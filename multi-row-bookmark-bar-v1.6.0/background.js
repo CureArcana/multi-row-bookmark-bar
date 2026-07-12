@@ -12,6 +12,7 @@
     barHeight: 36,
     barMode: "overflow",
     boundaryOffset: 0,
+    boundaryOffsetPx: 0,
   };
 
   function mapBookmark(node) {

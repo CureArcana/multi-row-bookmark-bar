@@ -12,6 +12,7 @@
     barHeight: 36,
     barMode: "overflow",
     boundaryOffset: 0,
+    boundaryOffsetPx: 0,
   };
   const $ = (id) => document.getElementById(id);
 
@@ -22,7 +23,7 @@
     $("fontSize").value = String(s.fontSize || 12);
     $("barHeight").value = String(s.barHeight || 36);
     $("maxRows").value = String(s.maxRows);
-    $("boundaryOffset").value = String(s.boundaryOffset || 0);
+    $("boundaryOffset").value = String(s.boundaryOffsetPx || 0);
     $("barMode").value = s.barMode;
     $("displayMode").value = s.displayMode;
     $("folderOpenMode").value = s.folderOpenMode;
@@ -35,7 +36,8 @@
       fontSize: parseInt($("fontSize").value, 10) || 12,
       barHeight: parseInt($("barHeight").value, 10) || 36,
       maxRows: parseInt($("maxRows").value, 10) || 0,
-      boundaryOffset: Math.max(-5, Math.min(5, parseInt($("boundaryOffset").value, 10) || 0)),
+      boundaryOffset: 0,
+      boundaryOffsetPx: Math.max(-600, Math.min(600, parseInt($("boundaryOffset").value, 10) || 0)),
       barMode: $("barMode").value,
       displayMode: $("displayMode").value,
       folderOpenMode: $("folderOpenMode").value,
