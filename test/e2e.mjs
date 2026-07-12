@@ -222,6 +222,71 @@ try {
   await setOffset(0);
   await sleep(500);
 
+  // --- gear settings panel: real mouse clicks work through shadow DOM ---
+  const gearRect = await page.evaluate(() => {
+    const sh = document.getElementById("mrbb-host").shadowRoot;
+    const g = sh.querySelector(".mrbb-gear-btn").getBoundingClientRect();
+    return { x: g.x + g.width / 2, y: g.y + g.height / 2 };
+  });
+  await page.mouse.click(gearRect.x, gearRect.y);
+  await sleep(300);
+  const panelOpen = await page.evaluate(() =>
+    !!document.getElementById("mrbb-host").shadowRoot.querySelector(".mrbb-settings-panel")
+  );
+  check("gear click opens settings panel", panelOpen);
+
+  const fsBtnRect = await page.evaluate(() => {
+    const sh = document.getElementById("mrbb-host").shadowRoot;
+    const b = sh.querySelector('[data-action="fs-inc"]');
+    if (!b) return null;
+    const r = b.getBoundingClientRect();
+    return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+  });
+  await page.mouse.click(fsBtnRect.x, fsBtnRect.y);
+  await sleep(600);
+  const afterClick = await page.evaluate(async () => {
+    const sh = document.getElementById("mrbb-host").shadowRoot;
+    return {
+      panelStillOpen: !!sh.querySelector(".mrbb-settings-panel"),
+      fsLabel: sh.querySelector("#mrbb-fs-val")?.textContent ?? null,
+    };
+  });
+  const storedFs = await sw.evaluate(async () => {
+    const d = await chrome.storage.sync.get("mrbb-settings");
+    return d["mrbb-settings"]?.fontSize;
+  });
+  check("settings button click works (panel stays, value saved)",
+    afterClick.panelStillOpen && afterClick.fsLabel === "13px" && storedFs === 13,
+    JSON.stringify({ ...afterClick, storedFs }));
+  // 元に戻して panel を閉じる（パネル外をクリック）
+  await sw.evaluate(async () => {
+    const d = await chrome.storage.sync.get("mrbb-settings");
+    const s = d["mrbb-settings"] || {};
+    s.fontSize = 12;
+    await chrome.storage.sync.set({ "mrbb-settings": s });
+  });
+  await page.mouse.click(640, 600);
+  await sleep(400);
+  const panelClosed = await page.evaluate(() =>
+    !document.getElementById("mrbb-host").shadowRoot.querySelector(".mrbb-settings-panel")
+  );
+  check("panel closes on outside click", panelClosed);
+
+  // --- dragstart puts URL payload on the drag (native bar drop needs it) ---
+  // NOTE: effectAllowed は合成イベントでは Chrome が設定を無視して "none" を
+  // 返すため検証できない（実ドラッグでは "all" が効く）。URI のみ検証する。
+  const ea = await page.evaluate(() => {
+    const sh = document.getElementById("mrbb-host").shadowRoot;
+    const src = sh.querySelector(".mrbb-item.mrbb-link");
+    const dt = new DataTransfer();
+    src.dispatchEvent(new DragEvent("dragstart", { bubbles: true, composed: true, dataTransfer: dt }));
+    const out = { uri: dt.getData("text/uri-list"), plain: dt.getData("text/plain") };
+    sh.getElementById("mrbb-root").dispatchEvent(new DragEvent("dragend", { bubbles: true, composed: true }));
+    return out;
+  });
+  check("dragstart sets uri payload for native bar drop",
+    ea.uri.startsWith("http") && ea.plain === ea.uri, JSON.stringify(ea));
+
   // --- folder icon is GM3 outline (native style) ---
   const iconCheck = await page.evaluate(() => {
     const sh = document.getElementById("mrbb-host").shadowRoot;

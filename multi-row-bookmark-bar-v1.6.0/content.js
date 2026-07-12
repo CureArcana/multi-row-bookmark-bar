@@ -351,7 +351,9 @@
       if (!item || !item.dataset.bmId) return;
       dragId = item.dataset.bmId;
       item.classList.add("mrbb-dragging");
-      e.dataTransfer.effectAllowed = "move";
+      // "move" のみだとネイティブバー側（copy/link で受ける）が
+      // ドロップを拒否するため copy/move/link すべて許可する
+      e.dataTransfer.effectAllowed = "all";
       // URL を載せておくと Chrome ネイティブバーへのドロップが可能になる
       var href = item.getAttribute("href");
       if (href && href !== "#") {
@@ -672,8 +674,9 @@
     }
     if (mode === "click") {
       var handler = function (e) {
-        if (dd.contains(e.target) || anchor.contains(e.target)) return;
-        if (shadowRoot) { var subs = shadowRoot.querySelectorAll(".mrbb-sub-dropdown"); for (var i = 0; i < subs.length; i++) if (subs[i].contains(e.target)) return; }
+        var path = e.composedPath ? e.composedPath() : [e.target];
+        if (path.indexOf(dd) !== -1 || path.indexOf(anchor) !== -1) return;
+        if (shadowRoot) { var subs = shadowRoot.querySelectorAll(".mrbb-sub-dropdown"); for (var i = 0; i < subs.length; i++) if (path.indexOf(subs[i]) !== -1) return; }
         closeDropdown(true);
       };
       setTimeout(function () { document.addEventListener("mousedown", handler, true); dropdownOutsideHandler = handler; }, 0);
@@ -688,7 +691,7 @@
     el.addEventListener("dragstart", function (e) {
       e.stopPropagation();
       setExternalDragId(item.id);
-      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.effectAllowed = "all";
       if (item.url) {
         e.dataTransfer.setData("text/uri-list", item.url);
         e.dataTransfer.setData("text/plain", item.url);
@@ -826,7 +829,15 @@
     panel.querySelector("#mrbb-fo-sel").addEventListener("change", function (e) { settings.folderOpenMode = e.target.value; saveSettings(); });
     panel.querySelector("#mrbb-bm-sel").addEventListener("change", function (e) { settings.barMode = e.target.value; saveSettings(); });
 
-    var dismiss = function (e) { if (!panel.contains(e.target) && e.target !== gearBtn && !gearBtn.contains(e.target)) { panel.remove(); document.removeEventListener("mousedown", dismiss, true); } };
+    // NOTE: document レベルでは shadow 内のイベントは target がホスト要素に
+    // リターゲットされるため、composedPath() で実際のクリック先を判定する
+    var dismiss = function (e) {
+      var path = e.composedPath ? e.composedPath() : [e.target];
+      if (path.indexOf(panel) === -1 && path.indexOf(gearBtn) === -1) {
+        panel.remove();
+        document.removeEventListener("mousedown", dismiss, true);
+      }
+    };
     setTimeout(function () { document.addEventListener("mousedown", dismiss, true); }, 0);
     panel.addEventListener("contextmenu", function (e) { e.stopPropagation(); });
   }
@@ -891,7 +902,8 @@
     }
 
     document.addEventListener("mousedown", function (e) {
-      if (!container.contains(e.target) && resultPanel && !resultPanel.contains(e.target)) closeSearch();
+      var path = e.composedPath ? e.composedPath() : [e.target];
+      if (path.indexOf(container) === -1 && resultPanel && path.indexOf(resultPanel) === -1) closeSearch();
     }, true);
 
     container.appendChild(input);
