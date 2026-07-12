@@ -218,6 +218,72 @@ try {
   check("D&D indicator at item boundary (no offset)", dndCheck.diff !== undefined && dndCheck.diff < 2,
     JSON.stringify(dndCheck));
 
+  // --- drag leaving the bar clears the stale drop indicator ---
+  const staleInd = await page.evaluate(() => {
+    const sh = document.getElementById("mrbb-host").shadowRoot;
+    const root = sh.getElementById("mrbb-root");
+    const items = [...sh.querySelectorAll(".mrbb-item:not(.mrbb-folder)")];
+    const src = items[0], target = items[2];
+    const dt = new DataTransfer();
+    const tr = target.getBoundingClientRect();
+    src.dispatchEvent(new DragEvent("dragstart", { bubbles: true, composed: true, dataTransfer: dt }));
+    root.dispatchEvent(new DragEvent("dragover", {
+      bubbles: true, composed: true, dataTransfer: dt,
+      clientX: tr.left + 2, clientY: tr.top + tr.height / 2,
+    }));
+    const shown = !!sh.querySelector(".mrbb-drop-indicator");
+    // ページ本文（バー外）へドラッグ → 消えるべき
+    document.body.dispatchEvent(new DragEvent("dragover", {
+      bubbles: true, composed: true, dataTransfer: dt,
+      clientX: 400, clientY: 500,
+    }));
+    const afterPage = !!sh.querySelector(".mrbb-drop-indicator");
+    // 再度バー上 → 復活、そしてウィンドウ外（ネイティブバー相当）へ → 消える
+    root.dispatchEvent(new DragEvent("dragover", {
+      bubbles: true, composed: true, dataTransfer: dt,
+      clientX: tr.left + 2, clientY: tr.top + tr.height / 2,
+    }));
+    const reshown = !!sh.querySelector(".mrbb-drop-indicator");
+    document.dispatchEvent(new DragEvent("dragleave", { bubbles: true, composed: true, relatedTarget: null }));
+    const afterLeave = !!sh.querySelector(".mrbb-drop-indicator");
+    root.dispatchEvent(new DragEvent("dragend", { bubbles: true, composed: true }));
+    return { shown, afterPage, reshown, afterLeave };
+  });
+  check("indicator cleared when drag leaves the bar",
+    staleInd.shown && !staleInd.afterPage && staleInd.reshown && !staleInd.afterLeave,
+    JSON.stringify(staleInd));
+
+  // --- hoverCloseMs: configurable folder close delay ---
+  const setHover = (v) => sw.evaluate(async (val) => {
+    const data = await chrome.storage.sync.get("mrbb-settings");
+    const s = data["mrbb-settings"] || {};
+    s.hoverCloseMs = val;
+    await chrome.storage.sync.set({ "mrbb-settings": s });
+  }, v);
+  await setHover(1200);
+  await sleep(700);
+  const hoverBox = await page.evaluate(() => {
+    const sh = document.getElementById("mrbb-host").shadowRoot;
+    const f = [...sh.querySelectorAll(".mrbb-folder")].find(x => x.querySelector(".mrbb-title")?.textContent === "MyFolder");
+    const r = f.getBoundingClientRect();
+    return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+  });
+  await page.mouse.move(hoverBox.x, hoverBox.y);
+  await sleep(250);
+  await page.mouse.move(500, 600); // 遠くへ離す
+  await sleep(500); // 1200ms 未満 → まだ開いているはず
+  const stillOpen = await page.evaluate(() =>
+    !!document.getElementById("mrbb-host").shadowRoot.querySelector(".mrbb-dropdown")
+  );
+  await sleep(1100); // 合計 1600ms > 1200ms → 閉じているはず
+  const closedAfter = await page.evaluate(() =>
+    !!document.getElementById("mrbb-host").shadowRoot.querySelector(".mrbb-dropdown")
+  );
+  check("hoverCloseMs=1200: open at 500ms, closed after delay",
+    stillOpen && !closedAfter, JSON.stringify({ stillOpen, closedAfter }));
+  await setHover(400);
+  await sleep(500);
+
   // --- boundary offset (px): +400px reserve shows 2 more items (each ~190px) ---
   await page.setViewport({ width: 1280, height: 900 });
   await sleep(500);

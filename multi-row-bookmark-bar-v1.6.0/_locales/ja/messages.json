@@ -41,6 +41,8 @@
   "boundaryEarlier": { "message": "1つ手前から表示" },
   "boundaryLater": { "message": "1つ後ろから表示" },
   "boundaryOffsetDesc": { "message": "px単位の補正 (プラス = 手前から表示)" },
+  "hoverCloseDelay": { "message": "フォルダを閉じるまでの時間" },
+  "hoverCloseDelayDesc": { "message": "カーソルが離れてから閉じるまでのms (100 - 2000)" },
   "enabled": { "message": "有効" },
   "displayMode": { "message": "表示モード" },
   "iconText": { "message": "アイコン + テキスト" },

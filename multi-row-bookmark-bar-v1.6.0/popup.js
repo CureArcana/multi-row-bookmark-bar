@@ -13,6 +13,7 @@
     barMode: "overflow",
     boundaryOffset: 0,
     boundaryOffsetPx: 0,
+    hoverCloseMs: 400,
   };
   const $ = (id) => document.getElementById(id);
 
@@ -27,6 +28,7 @@
     $("barMode").value = s.barMode;
     $("displayMode").value = s.displayMode;
     $("folderOpenMode").value = s.folderOpenMode;
+    $("hoverCloseMs").value = String(s.hoverCloseMs || 400);
     $("showCondition").value = s.showCondition;
   }
 
@@ -41,6 +43,7 @@
       barMode: $("barMode").value,
       displayMode: $("displayMode").value,
       folderOpenMode: $("folderOpenMode").value,
+      hoverCloseMs: Math.max(100, Math.min(2000, parseInt($("hoverCloseMs").value, 10) || 400)),
       showCondition: $("showCondition").value,
     };
     await chrome.storage.sync.set({ [STORAGE_KEY]: s });

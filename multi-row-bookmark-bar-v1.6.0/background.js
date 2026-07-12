@@ -13,6 +13,7 @@
     barMode: "overflow",
     boundaryOffset: 0,
     boundaryOffsetPx: 0,
+    hoverCloseMs: 400,
   };
 
   function mapBookmark(node) {

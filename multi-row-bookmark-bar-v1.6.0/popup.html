@@ -211,6 +211,16 @@
   <div class="section">
     <label>
       <div>
+        <div class="label-text" data-i18n="hoverCloseDelay">Folder close delay</div>
+        <div class="label-desc" data-i18n="hoverCloseDelayDesc">ms until a hovered folder closes (100 - 2000)</div>
+      </div>
+      <input type="number" id="hoverCloseMs" value="400" min="100" max="2000" step="100">
+    </label>
+  </div>
+
+  <div class="section">
+    <label>
+      <div>
         <div class="label-text" data-i18n="showCondition">Show condition</div>
       </div>
       <select id="showCondition">
@@ -220,7 +230,7 @@
     </label>
   </div>
 
-  <div class="version">v1.8.2</div>
+  <div class="version">v1.8.3</div>
 
   <script src="popup.js"></script>
 </body>

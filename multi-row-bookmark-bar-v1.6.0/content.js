@@ -12,8 +12,9 @@
     fontSize: 12, barHeight: 36,
     barMode: "overflow", // "overflow": ネイティブバーの続きから / "independent": 全ブックマークを描画
     boundaryOffset: 0,    // (旧) アイテム数補正 — boundaryOffsetPx へ移行済み
-    boundaryOffsetPx: 0   // ネイティブバー使用可能幅の手動補正(px)。+ = 手前から表示。
+    boundaryOffsetPx: 0,  // ネイティブバー使用可能幅の手動補正(px)。+ = 手前から表示。
                           // px 保存なので並べ替えでどのブックマークが境界に来ても補正が安定する
+    hoverCloseMs: 400     // ホバー展開したフォルダを、カーソルが離れてから閉じるまでの時間(ms)
   };
 
   // Chrome ネイティブバーの寸法モデル
@@ -70,6 +71,7 @@
   // Context menu state
   var activeContextMenu = null;
   var contextMenuBound = false;
+  var dragDocBound = false;
 
   // ===== Helpers =====
   function getTextWidth(text, fontSize, maxWidth) {
@@ -445,6 +447,30 @@
       if (dragId) { executeMove(); return; }
       executeExternalDrop(e.dataTransfer);
     });
+
+    // カーソルがバーの外に出たら挿入線を消す。
+    // ネイティブバー（ブラウザ chrome 領域）へ出た場合はページに drag イベントが
+    // 一切来なくなるため、最後に表示した挿入線が残って紛らわしい
+    if (!dragDocBound) {
+      dragDocBound = true;
+      document.addEventListener("dragover", function (e) {
+        if (!dropIndicatorEl && !folderDropTarget) return;
+        var path = e.composedPath ? e.composedPath() : [];
+        if (hostEl && path.indexOf(hostEl) === -1) {
+          removeIndicator();
+          clearFolderHighlight();
+          dropTarget = null;
+        }
+      }, true);
+      document.addEventListener("dragleave", function (e) {
+        // relatedTarget === null はウィンドウ外（ネイティブバー等）への離脱
+        if (e.relatedTarget === null) {
+          removeIndicator();
+          clearFolderHighlight();
+          dropTarget = null;
+        }
+      }, true);
+    }
   }
 
   function setupDropdownDragDrop(dropdown, parentId) {
@@ -683,7 +709,7 @@
     if (ddr.bottom > window.innerHeight) dd.style.top = fx(Math.max(4, window.innerHeight - ddr.height - 4));
 
     if (mode === "hover") {
-      dropdownCleanup = setupHoverTracking(anchor, dd, 400);
+      dropdownCleanup = setupHoverTracking(anchor, dd, settings.hoverCloseMs || 400);
     }
     if (mode === "click") {
       var handler = function (e) {
@@ -752,7 +778,7 @@
           var inSub = ev.clientX >= subR.left - 8 && ev.clientX <= subR.right + 4 && ev.clientY >= subR.top - 4 && ev.clientY <= subR.bottom + 4;
           var inBridge = ev.clientY >= Math.min(elR.top, subR.top) - 4 && ev.clientY <= Math.max(elR.bottom, subR.bottom) + 4 && ev.clientX >= elR.right - 8 && ev.clientX <= subR.left + 8;
           if (inEl || inSub || inBridge) { if (subTimer) { clearTimeout(subTimer); subTimer = null; } }
-          else if (!subTimer) { subTimer = setTimeout(function () { sub.remove(); document.removeEventListener("mousemove", onSubMove, true); }, 300); }
+          else if (!subTimer) { subTimer = setTimeout(function () { sub.remove(); document.removeEventListener("mousemove", onSubMove, true); }, settings.hoverCloseMs || 400); }
         };
         document.addEventListener("mousemove", onSubMove, true);
         subCleanup = function () { document.removeEventListener("mousemove", onSubMove, true); if (subTimer) { clearTimeout(subTimer); subTimer = null; } };
@@ -811,7 +837,8 @@
       '<div class="mrbb-settings-row"><span>' + t("maxRows") + '</span><input type="number" id="mrbb-mr-inp" value="' + settings.maxRows + '" min="0" max="20" style="width:48px;text-align:center;border:1px solid #dadce0;border-radius:3px;padding:2px 4px;font-size:12px;"></div>' +
       '<div class="mrbb-settings-row"><span>' + t("folderOpen") + '</span><select id="mrbb-fo-sel" style="border:1px solid #dadce0;border-radius:3px;padding:2px 4px;font-size:12px;"><option value="hover"' + (settings.folderOpenMode === "hover" ? " selected" : "") + '>' + t("hover") + '</option><option value="click"' + (settings.folderOpenMode === "click" ? " selected" : "") + '>' + t("click") + '</option></select></div>' +
       '<div class="mrbb-settings-row"><span>' + t("barMode") + '</span><select id="mrbb-bm-sel" style="border:1px solid #dadce0;border-radius:3px;padding:2px 4px;font-size:12px;"><option value="overflow"' + (settings.barMode === "overflow" ? " selected" : "") + '>' + t("overflowOnly") + '</option><option value="independent"' + (settings.barMode === "independent" ? " selected" : "") + '>' + t("allBookmarks") + '</option></select></div>' +
-      '<div class="mrbb-settings-row"><span>' + t("boundaryAdjust") + '</span><div class="mrbb-settings-fontsize"><button data-action="bo-dec" title="' + t("boundaryEarlier") + '">◀</button><span id="mrbb-bo-val">' + (settings.boundaryOffsetPx || 0) + 'px</span><button data-action="bo-inc" title="' + t("boundaryLater") + '">▶</button></div></div>';
+      '<div class="mrbb-settings-row"><span>' + t("boundaryAdjust") + '</span><div class="mrbb-settings-fontsize"><button data-action="bo-dec" title="' + t("boundaryEarlier") + '">◀</button><span id="mrbb-bo-val">' + (settings.boundaryOffsetPx || 0) + 'px</span><button data-action="bo-inc" title="' + t("boundaryLater") + '">▶</button></div></div>' +
+      '<div class="mrbb-settings-row"><span>' + t("hoverCloseDelay") + '</span><div class="mrbb-settings-fontsize"><button data-action="hc-dec">-</button><span id="mrbb-hc-val">' + (settings.hoverCloseMs || 400) + 'ms</span><button data-action="hc-inc">+</button></div></div>';
 
     var gr = gearBtn.getBoundingClientRect();
     panel.style.top = fx(gr.bottom + 4);
@@ -848,6 +875,13 @@
       var step = (info && info.k < info.n) ? info.widths[info.k] : 80;
       settings.boundaryOffsetPx = Math.max(-600, Math.min(600, (settings.boundaryOffsetPx || 0) - step));
       saveSettings(); updateBoLabel();
+    });
+    var hcValEl = panel.querySelector("#mrbb-hc-val");
+    panel.querySelector('[data-action="hc-dec"]').addEventListener("click", function () {
+      var v = Math.max(100, (settings.hoverCloseMs || 400) - 100); settings.hoverCloseMs = v; saveSettings(); if (hcValEl) hcValEl.textContent = v + "ms";
+    });
+    panel.querySelector('[data-action="hc-inc"]').addEventListener("click", function () {
+      var v = Math.min(2000, (settings.hoverCloseMs || 400) + 100); settings.hoverCloseMs = v; saveSettings(); if (hcValEl) hcValEl.textContent = v + "ms";
     });
     panel.querySelector("#mrbb-mr-inp").addEventListener("change", function (e) { settings.maxRows = parseInt(e.target.value, 10) || 0; saveSettings(); });
     panel.querySelector("#mrbb-fo-sel").addEventListener("change", function (e) { settings.folderOpenMode = e.target.value; saveSettings(); });

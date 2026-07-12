@@ -41,6 +41,8 @@
   "boundaryEarlier": { "message": "Start one bookmark earlier" },
   "boundaryLater": { "message": "Start one bookmark later" },
   "boundaryOffsetDesc": { "message": "Reserve adjustment in px (+ = start earlier)" },
+  "hoverCloseDelay": { "message": "Folder close delay" },
+  "hoverCloseDelayDesc": { "message": "ms until a hovered folder closes (100 - 2000)" },
   "enabled": { "message": "Enabled" },
   "displayMode": { "message": "Display mode" },
   "iconText": { "message": "Icon + Text" },
