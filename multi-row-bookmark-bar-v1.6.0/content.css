@@ -61,6 +61,17 @@
   filter: none !important;
 }
 
+/* オートハイド: 普段は画面外(上)に隠れ、上端ホバーで降りてくる。ページ無改変 */
+:host(.mrbb-autohide) {
+  transform: translateY(-100%) !important;
+  transition: transform 0.15s ease !important;
+  box-shadow: none !important;
+}
+:host(.mrbb-autohide.mrbb-shown) {
+  transform: translateY(0) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+}
+
 /* === Shadow DOM 内部 (!important 不要) === */
 #mrbb-root { width: 100%; }
 

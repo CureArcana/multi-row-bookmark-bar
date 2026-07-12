@@ -14,6 +14,7 @@
     boundaryOffset: 0,
     boundaryOffsetPx: 0,
     hoverCloseMs: 400,
+    displayBehavior: "autohide",
   };
   const $ = (id) => document.getElementById(id);
 
@@ -26,6 +27,7 @@
     $("maxRows").value = String(s.maxRows);
     $("boundaryOffset").value = String(s.boundaryOffsetPx || 0);
     $("barMode").value = s.barMode;
+    $("displayBehavior").value = s.displayBehavior || "autohide";
     $("displayMode").value = s.displayMode;
     $("folderOpenMode").value = s.folderOpenMode;
     $("hoverCloseMs").value = String(s.hoverCloseMs || 400);
@@ -41,6 +43,7 @@
       boundaryOffset: 0,
       boundaryOffsetPx: Math.max(-600, Math.min(600, parseInt($("boundaryOffset").value, 10) || 0)),
       barMode: $("barMode").value,
+      displayBehavior: $("displayBehavior").value,
       displayMode: $("displayMode").value,
       folderOpenMode: $("folderOpenMode").value,
       hoverCloseMs: Math.max(100, Math.min(2000, parseInt($("hoverCloseMs").value, 10) || 400)),

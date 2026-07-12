@@ -163,6 +163,19 @@
   <div class="section">
     <label>
       <div>
+        <div class="label-text" data-i18n="displayBehavior">Display</div>
+        <div class="label-desc" data-i18n="displayBehaviorDesc">Auto-hide never alters page layout</div>
+      </div>
+      <select id="displayBehavior">
+        <option value="autohide" data-i18n="autohideOption">Auto-hide overlay</option>
+        <option value="push" data-i18n="pushOption">Push page down</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="section">
+    <label>
+      <div>
         <div class="label-text" data-i18n="barMode">Bar mode</div>
         <div class="label-desc" data-i18n="barModeDesc">Overflow = continue from hidden bookmarks</div>
       </div>
@@ -230,7 +243,7 @@
     </label>
   </div>
 
-  <div class="version">v1.10.0</div>
+  <div class="version">v2.0.0</div>
 
   <script src="popup.js"></script>
 </body>

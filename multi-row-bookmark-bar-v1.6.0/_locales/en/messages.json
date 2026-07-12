@@ -160,5 +160,17 @@
   },
   "range2060": {
     "message": "20 - 60"
+  },
+  "displayBehavior": {
+    "message": "Display"
+  },
+  "displayBehaviorDesc": {
+    "message": "Auto-hide never alters page layout"
+  },
+  "autohideOption": {
+    "message": "Auto-hide overlay"
+  },
+  "pushOption": {
+    "message": "Push page down"
   }
 }

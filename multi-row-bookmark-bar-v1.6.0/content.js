@@ -14,7 +14,9 @@
     boundaryOffset: 0,    // (旧) アイテム数補正 — boundaryOffsetPx へ移行済み
     boundaryOffsetPx: 0,  // ネイティブバー使用可能幅の手動補正(px)。+ = 手前から表示。
                           // px 保存なので並べ替えでどのブックマークが境界に来ても補正が安定する
-    hoverCloseMs: 400     // ホバー展開したフォルダを、カーソルが離れてから閉じるまでの時間(ms)
+    hoverCloseMs: 400,    // ホバー展開したフォルダを、カーソルが離れてから閉じるまでの時間(ms)
+    displayBehavior: "autohide" // "autohide": ページ無改変のオーバーレイ（上端ホバーで表示）
+                                // "push": ページを押し下げて常時表示（fixed要素補正あり）
   };
 
   // Chrome ネイティブバーの寸法モデル
@@ -72,6 +74,11 @@
   var activeContextMenu = null;
   var contextMenuBound = false;
   var dragDocBound = false;
+
+  // Auto-hide state
+  var autohideBound = false;
+  var autohideTimer = null;
+  var barShown = false;
 
   // ===== Helpers =====
   function getTextWidth(text, fontSize, maxWidth) {
@@ -853,6 +860,7 @@
       '<div class="mrbb-settings-row"><span>' + t("maxRows") + '</span><input type="number" id="mrbb-mr-inp" value="' + settings.maxRows + '" min="0" max="20" style="width:48px;text-align:center;border:1px solid #dadce0;border-radius:3px;padding:2px 4px;font-size:12px;"></div>' +
       '<div class="mrbb-settings-row"><span>' + t("folderOpen") + '</span><select id="mrbb-fo-sel" style="border:1px solid #dadce0;border-radius:3px;padding:2px 4px;font-size:12px;"><option value="hover"' + (settings.folderOpenMode === "hover" ? " selected" : "") + '>' + t("hover") + '</option><option value="click"' + (settings.folderOpenMode === "click" ? " selected" : "") + '>' + t("click") + '</option></select></div>' +
       '<div class="mrbb-settings-row"><span>' + t("barMode") + '</span><select id="mrbb-bm-sel" style="border:1px solid #dadce0;border-radius:3px;padding:2px 4px;font-size:12px;"><option value="overflow"' + (settings.barMode === "overflow" ? " selected" : "") + '>' + t("overflowOnly") + '</option><option value="independent"' + (settings.barMode === "independent" ? " selected" : "") + '>' + t("allBookmarks") + '</option></select></div>' +
+      '<div class="mrbb-settings-row"><span>' + t("displayBehavior") + '</span><select id="mrbb-db-sel" style="border:1px solid #dadce0;border-radius:3px;padding:2px 4px;font-size:12px;"><option value="autohide"' + (settings.displayBehavior !== "push" ? " selected" : "") + '>' + t("autohideOption") + '</option><option value="push"' + (settings.displayBehavior === "push" ? " selected" : "") + '>' + t("pushOption") + '</option></select></div>' +
       '<div class="mrbb-settings-row"><span>' + t("boundaryAdjust") + '</span><div class="mrbb-settings-fontsize"><button data-action="bo-dec" title="' + t("boundaryEarlier") + '">◀</button><span id="mrbb-bo-val">' + (settings.boundaryOffsetPx || 0) + 'px</span><button data-action="bo-inc" title="' + t("boundaryLater") + '">▶</button></div></div>' +
       '<div class="mrbb-settings-row"><span>' + t("hoverCloseDelay") + '</span><div class="mrbb-settings-fontsize"><button data-action="hc-dec">-</button><span id="mrbb-hc-val">' + (settings.hoverCloseMs || 400) + 'ms</span><button data-action="hc-inc">+</button></div></div>';
 
@@ -902,6 +910,7 @@
     panel.querySelector("#mrbb-mr-inp").addEventListener("change", function (e) { settings.maxRows = parseInt(e.target.value, 10) || 0; saveSettings(); });
     panel.querySelector("#mrbb-fo-sel").addEventListener("change", function (e) { settings.folderOpenMode = e.target.value; saveSettings(); });
     panel.querySelector("#mrbb-bm-sel").addEventListener("change", function (e) { settings.barMode = e.target.value; saveSettings(); });
+    panel.querySelector("#mrbb-db-sel").addEventListener("change", function (e) { settings.displayBehavior = e.target.value; saveSettings(); });
 
     // NOTE: document レベルでは shadow 内のイベントは target がホスト要素に
     // リターゲットされるため、composedPath() で実際のクリック先を判定する
@@ -983,6 +992,52 @@
     container.appendChild(input);
     container.appendChild(btn);
     return container;
+  }
+
+  // ===== Auto-hide overlay =====
+  // ページのレイアウトには一切触れず、バーは普段画面外(上)に隠しておき、
+  // カーソルが画面最上部に来たら表示する。どのサイトも壊れない根本対策
+  function isAutohide() { return settings.displayBehavior !== "push"; }
+
+  function showBar() {
+    if (!hostEl || barShown) return;
+    barShown = true;
+    hostEl.classList.add("mrbb-shown");
+  }
+  function hideBar() {
+    if (!hostEl || !barShown) return;
+    // 操作中は隠さない
+    if (isDragging() || activeDropdown || activeContextMenu) return;
+    if (shadowRoot && shadowRoot.querySelector(".mrbb-settings-panel")) return;
+    barShown = false;
+    hostEl.classList.remove("mrbb-shown");
+    closeDropdown(true);
+    closeContextMenu();
+  }
+  function scheduleHide() {
+    clearTimeout(autohideTimer);
+    autohideTimer = setTimeout(hideBar, settings.hoverCloseMs || 400);
+  }
+  function cancelHide() { clearTimeout(autohideTimer); autohideTimer = null; }
+
+  function bindAutohide() {
+    if (autohideBound) return;
+    autohideBound = true;
+    document.addEventListener("mousemove", function (e) {
+      if (!isAutohide() || !hostEl) return;
+      var edge = 2;
+      var barBottom = (barHeightPx / (currentZoom || 1)) + 24;
+      if (e.clientY <= edge) { cancelHide(); showBar(); }
+      else if (barShown && e.clientY > barBottom && !autohideTimer) scheduleHide();
+      else if (barShown && e.clientY <= barBottom) cancelHide();
+    }, true);
+    // ドラッグ中も上端で出す（バー間D&D用）。ページ側へ離れたら隠す
+    document.addEventListener("dragover", function (e) {
+      if (!isAutohide() || !hostEl) return;
+      var barBottom = (barHeightPx / (currentZoom || 1)) + 24;
+      if (e.clientY <= Math.max(40, barBottom)) { cancelHide(); showBar(); }
+      else if (barShown) scheduleHide();
+    }, true);
   }
 
   // ===== Fixed/Sticky element push-down =====
@@ -1157,25 +1212,42 @@
       rootEl.appendChild(row);
     }
 
-    // バーの高さ分だけページ全体を下へ押し下げる（コンテンツが隠れないように）
     var visibleHeight = extRows * bh;
     hostEl.style.height = visibleHeight + "px";
     barHeightPx = visibleHeight;
-    var marginTop = visibleHeight / zoom;
-    if (originalBodyMarginTop === null) {
-      originalBodyMarginTop = parseFloat(getComputedStyle(document.body).marginTop) || 0;
-    }
-    document.body.style.setProperty("margin-top", (originalBodyMarginTop + marginTop) + "px", "important");
 
-    // 固定ヘッダーも押し下げる（バー高さが変わった場合は付け直す）
-    restoreFixedElements();
-    adjustFixedElements(marginTop);
-    watchFixedElements();
+    if (isAutohide()) {
+      // ページ無改変モード: レイアウトに一切触れない。バーは普段画面外に隠す
+      hostEl.classList.add("mrbb-autohide");
+      if (barShown) hostEl.classList.add("mrbb-shown");
+      // push モードから切替えた場合の残骸を掃除
+      document.body.style.removeProperty("margin-top");
+      originalBodyMarginTop = null;
+      restoreFixedElements();
+      if (fixedObserver) { fixedObserver.disconnect(); fixedObserver = null; }
+      bindAutohide();
+    } else {
+      // push モード: バーの高さ分だけページ全体を下へ押し下げる
+      hostEl.classList.remove("mrbb-autohide");
+      hostEl.classList.remove("mrbb-shown");
+      barShown = false;
+      var marginTop = visibleHeight / zoom;
+      if (originalBodyMarginTop === null) {
+        originalBodyMarginTop = parseFloat(getComputedStyle(document.body).marginTop) || 0;
+      }
+      document.body.style.setProperty("margin-top", (originalBodyMarginTop + marginTop) + "px", "important");
+      // 固定ヘッダーも押し下げる（バー高さが変わった場合は付け直す）
+      restoreFixedElements();
+      adjustFixedElements(marginTop);
+      watchFixedElements();
+    }
   }
 
   function removeBar() {
     if (hostEl) { hostEl.remove(); hostEl = null; shadowRoot = null; rootEl = null; cssLoaded = false; }
     barHeightPx = 0;
+    barShown = false;
+    cancelHide();
     if (document.body) document.body.style.removeProperty("margin-top");
     originalBodyMarginTop = null;
     restoreFixedElements();

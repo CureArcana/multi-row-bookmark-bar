@@ -76,6 +76,14 @@ try {
   });
   check("bookmarks seeded", true);
 
+  // 既存の押し下げ系テストは push モードで検証（デフォルトは autohide）
+  await sw.evaluate(async () => {
+    const data = await chrome.storage.sync.get("mrbb-settings");
+    const s = data["mrbb-settings"] || {};
+    s.displayBehavior = "push";
+    await chrome.storage.sync.set({ "mrbb-settings": s });
+  });
+
   const page = await browser.newPage();
   await page.setViewport({ width: 1280, height: 900 });
   await page.goto("http://localhost:18923/", { waitUntil: "load" });
@@ -581,6 +589,48 @@ try {
   check("tab group chip shifts boundary earlier & restores on close",
     afterGroup < beforeGroup && afterUngroup === beforeGroup,
     JSON.stringify({ beforeGroup, afterGroup, afterUngroup }));
+
+  // --- autohide (default): page untouched, bar reveals at top edge ---
+  await sw.evaluate(async () => {
+    const data = await chrome.storage.sync.get("mrbb-settings");
+    const s = data["mrbb-settings"] || {};
+    s.displayBehavior = "autohide";
+    await chrome.storage.sync.set({ "mrbb-settings": s });
+  });
+  await sleep(800);
+  const ah = await page.evaluate(() => {
+    const host = document.getElementById("mrbb-host");
+    return {
+      cls: host.className,
+      hidden: host.getBoundingClientRect().bottom <= 0,
+      bodyMargin: getComputedStyle(document.body).marginTop,
+      headerTop: document.getElementById("fixed-header").getBoundingClientRect().top,
+      sidebarTop: document.getElementById("fixed-sidebar").getBoundingClientRect().top,
+    };
+  });
+  check("autohide: page layout untouched (margin/fixed restored)",
+    parseFloat(ah.bodyMargin) === 0 && ah.headerTop === 0 && ah.sidebarTop === 0,
+    JSON.stringify(ah));
+  check("autohide: bar hidden above viewport", /mrbb-autohide/.test(ah.cls) && ah.hidden, ah.cls);
+
+  await page.mouse.move(400, 300);
+  await sleep(100);
+  await page.mouse.move(400, 1); // 画面最上端 → 表示
+  await sleep(400);
+  const revealed = await page.evaluate(() => {
+    const host = document.getElementById("mrbb-host");
+    const r = host.getBoundingClientRect();
+    return { top: r.top, shown: host.classList.contains("mrbb-shown") };
+  });
+  check("autohide: reveals at top edge", revealed.shown && Math.abs(revealed.top) < 1, JSON.stringify(revealed));
+
+  await page.mouse.move(500, 600); // 離れる → 自動格納
+  await sleep(900);
+  const rehidden = await page.evaluate(() => {
+    const host = document.getElementById("mrbb-host");
+    return { shown: host.classList.contains("mrbb-shown"), bottom: host.getBoundingClientRect().bottom };
+  });
+  check("autohide: hides again after leaving", !rehidden.shown && rehidden.bottom <= 0, JSON.stringify(rehidden));
 
   // --- everything fits -> bar disappears & page restored ---
   await sw.evaluate(async () => {

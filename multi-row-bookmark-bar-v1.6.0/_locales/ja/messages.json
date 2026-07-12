@@ -160,5 +160,17 @@
   },
   "range2060": {
     "message": "20 - 60"
+  },
+  "displayBehavior": {
+    "message": "表示方式"
+  },
+  "displayBehaviorDesc": {
+    "message": "オートハイドはページのレイアウトを一切変更しません"
+  },
+  "autohideOption": {
+    "message": "上端ホバーで表示"
+  },
+  "pushOption": {
+    "message": "ページを押し下げて常時表示"
   }
 }
