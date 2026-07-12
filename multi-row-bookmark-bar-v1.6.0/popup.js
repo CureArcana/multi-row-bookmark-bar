@@ -44,7 +44,15 @@
     await chrome.storage.sync.set({ [STORAGE_KEY]: s });
   }
 
+  function localize() {
+    document.querySelectorAll("[data-i18n]").forEach((el) => {
+      const m = chrome.i18n.getMessage(el.dataset.i18n);
+      if (m) el.textContent = m;
+    });
+  }
+
   document.addEventListener("DOMContentLoaded", async () => {
+    localize();
     await load();
     document.querySelectorAll("input, select").forEach((el) => {
       el.addEventListener("change", save);

@@ -121,7 +121,7 @@
   <div class="section">
     <label>
       <div>
-        <div class="label-text">Enabled</div>
+        <div class="label-text" data-i18n="enabled">Enabled</div>
       </div>
       <div class="toggle">
         <input type="checkbox" id="enabled" checked>
@@ -133,8 +133,8 @@
   <div class="section">
     <label>
       <div>
-        <div class="label-text">Font size (px)</div>
-        <div class="label-desc">8 - 20</div>
+        <div class="label-text" data-i18n="fontSizeUnit">Font size (px)</div>
+        <div class="label-desc" data-i18n="range820">8 - 20</div>
       </div>
       <input type="number" id="fontSize" value="12" min="8" max="20">
     </label>
@@ -143,8 +143,8 @@
   <div class="section">
     <label>
       <div>
-        <div class="label-text">Row height (px)</div>
-        <div class="label-desc">20 - 60</div>
+        <div class="label-text" data-i18n="rowHeightUnit">Row height (px)</div>
+        <div class="label-desc" data-i18n="range2060">20 - 60</div>
       </div>
       <input type="number" id="barHeight" value="36" min="20" max="60">
     </label>
@@ -153,8 +153,8 @@
   <div class="section">
     <label>
       <div>
-        <div class="label-text">Max rows</div>
-        <div class="label-desc">0 = unlimited</div>
+        <div class="label-text" data-i18n="maxRowsShort">Max rows</div>
+        <div class="label-desc" data-i18n="maxRowsDesc">0 = unlimited</div>
       </div>
       <input type="number" id="maxRows" value="0" min="0" max="10">
     </label>
@@ -163,12 +163,12 @@
   <div class="section">
     <label>
       <div>
-        <div class="label-text">Bar mode</div>
-        <div class="label-desc">Overflow = continue from hidden bookmarks</div>
+        <div class="label-text" data-i18n="barMode">Bar mode</div>
+        <div class="label-desc" data-i18n="barModeDesc">Overflow = continue from hidden bookmarks</div>
       </div>
       <select id="barMode">
-        <option value="overflow">Overflow only</option>
-        <option value="independent">All bookmarks</option>
+        <option value="overflow" data-i18n="overflowOnly">Overflow only</option>
+        <option value="independent" data-i18n="allBookmarks">All bookmarks</option>
       </select>
     </label>
   </div>
@@ -176,8 +176,8 @@
   <div class="section">
     <label>
       <div>
-        <div class="label-text">Boundary offset</div>
-        <div class="label-desc">Shift start position (- = earlier)</div>
+        <div class="label-text" data-i18n="boundaryAdjust">Boundary offset</div>
+        <div class="label-desc" data-i18n="boundaryOffsetDesc">Shift start position (- = earlier)</div>
       </div>
       <input type="number" id="boundaryOffset" value="0" min="-5" max="5">
     </label>
@@ -186,12 +186,12 @@
   <div class="section">
     <label>
       <div>
-        <div class="label-text">Display mode</div>
+        <div class="label-text" data-i18n="displayMode">Display mode</div>
       </div>
       <select id="displayMode">
-        <option value="both">Icon + Text</option>
-        <option value="icon_only">Icon only</option>
-        <option value="text_only">Text only</option>
+        <option value="both" data-i18n="iconText">Icon + Text</option>
+        <option value="icon_only" data-i18n="iconOnly">Icon only</option>
+        <option value="text_only" data-i18n="textOnly">Text only</option>
       </select>
     </label>
   </div>
@@ -199,11 +199,11 @@
   <div class="section">
     <label>
       <div>
-        <div class="label-text">Folder open</div>
+        <div class="label-text" data-i18n="folderOpen">Folder open</div>
       </div>
       <select id="folderOpenMode">
-        <option value="hover">Hover</option>
-        <option value="click">Click</option>
+        <option value="hover" data-i18n="hover">Hover</option>
+        <option value="click" data-i18n="click">Click</option>
       </select>
     </label>
   </div>
@@ -211,16 +211,16 @@
   <div class="section">
     <label>
       <div>
-        <div class="label-text">Show condition</div>
+        <div class="label-text" data-i18n="showCondition">Show condition</div>
       </div>
       <select id="showCondition">
-        <option value="always">Always</option>
-        <option value="new_tab_only">New tab only</option>
+        <option value="always" data-i18n="always">Always</option>
+        <option value="new_tab_only" data-i18n="newTabOnly">New tab only</option>
       </select>
     </label>
   </div>
 
-  <div class="version">v1.7.1</div>
+  <div class="version">v1.8.0</div>
 
   <script src="popup.js"></script>
 </body>

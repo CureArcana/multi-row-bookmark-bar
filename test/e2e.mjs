@@ -222,6 +222,74 @@ try {
   await setOffset(0);
   await sleep(500);
 
+  // --- dropdown height: extends to viewport bottom, scrolls only when needed ---
+  await sw.evaluate(async () => {
+    const big = await chrome.bookmarks.create({ parentId: "1", title: "BigFolder" });
+    for (let i = 1; i <= 40; i++) {
+      await chrome.bookmarks.create({ parentId: big.id, title: "Big-" + i, url: "https://big.example/" + i });
+    }
+  });
+  await sleep(900);
+  // 小さいフォルダ（3件）: スクロール無しで全表示
+  const smallDd = await page.evaluate(async () => {
+    const sh = document.getElementById("mrbb-host").shadowRoot;
+    const folders = [...sh.querySelectorAll(".mrbb-folder")];
+    const f = folders.find(x => x.querySelector(".mrbb-title")?.textContent === "MyFolder");
+    f.dispatchEvent(new MouseEvent("mouseenter", { bubbles: true, composed: true }));
+    await new Promise(r => setTimeout(r, 200));
+    const dd = sh.querySelector(".mrbb-dropdown");
+    const out = dd ? { scrolls: dd.scrollHeight > dd.clientHeight, rows: dd.querySelectorAll(".mrbb-dropdown-row").length } : null;
+    return out;
+  });
+  check("small folder: no scroll", smallDd && !smallDd.scrolls && smallDd.rows === 3, JSON.stringify(smallDd));
+  // 大きいフォルダ（40件）: 画面下端まで伸びてスクロール
+  const bigDd = await page.evaluate(async () => {
+    const sh = document.getElementById("mrbb-host").shadowRoot;
+    const folders = [...sh.querySelectorAll(".mrbb-folder")];
+    const f = folders.find(x => x.querySelector(".mrbb-title")?.textContent === "BigFolder");
+    f.dispatchEvent(new MouseEvent("mouseenter", { bubbles: true, composed: true }));
+    await new Promise(r => setTimeout(r, 200));
+    const dds = sh.querySelectorAll(".mrbb-dropdown");
+    const dd = dds[dds.length - 1];
+    const r = dd.getBoundingClientRect();
+    return {
+      scrolls: dd.scrollHeight > dd.clientHeight,
+      bottom: r.bottom,
+      viewportH: window.innerHeight,
+      reachesBottom: r.bottom > window.innerHeight - 60,
+    };
+  });
+  check("big folder: extends to viewport bottom and scrolls",
+    bigDd.scrolls && bigDd.reachesBottom, JSON.stringify(bigDd));
+  await sw.evaluate(async () => {
+    const kids = await chrome.bookmarks.getChildren("1");
+    const big = kids.find(k => k.title === "BigFolder");
+    if (big) await chrome.bookmarks.removeTree(big.id);
+  });
+  await sleep(700);
+
+  // --- i18n: context menu strings come from _locales (browser UI language) ---
+  const menuTexts = await page.evaluate(() => {
+    const sh = document.getElementById("mrbb-host").shadowRoot;
+    const item = sh.querySelector(".mrbb-item.mrbb-link");
+    item.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, composed: true, clientX: 300, clientY: 60 }));
+    const menu = sh.querySelector(".mrbb-context-menu");
+    const texts = menu ? [...menu.querySelectorAll(".mrbb-context-item")].map(m => m.textContent) : [];
+    if (menu) menu.remove();
+    return texts;
+  });
+  const expectedI18n = await sw.evaluate(() => ({
+    locale: chrome.i18n.getUILanguage(),
+    rename: chrome.i18n.getMessage("rename"),
+    openInNewTab: chrome.i18n.getMessage("openInNewTab"),
+    sortByName: chrome.i18n.getMessage("sortByName"),
+  }));
+  check("i18n: context menu localized to browser UI language",
+    menuTexts.includes(expectedI18n.rename) &&
+    menuTexts.includes(expectedI18n.openInNewTab) &&
+    menuTexts.includes(expectedI18n.sortByName),
+    JSON.stringify({ locale: expectedI18n.locale, sample: menuTexts.slice(0, 3) }));
+
   // --- gear settings panel: real mouse clicks work through shadow DOM ---
   const gearRect = await page.evaluate(() => {
     const sh = document.getElementById("mrbb-host").shadowRoot;

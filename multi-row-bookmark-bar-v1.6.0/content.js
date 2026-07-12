@@ -130,6 +130,12 @@
   var currentZoom = 1;
   function fx(v) { return (v * currentZoom) + "px"; }
 
+  // i18n: _locales/{en,ja}/messages.json から Chrome の UI 言語で取得
+  function t(key) {
+    try { var m = chrome.i18n.getMessage(key); if (m) return m; } catch (e) { /* ignore */ }
+    return key;
+  }
+
   // ===== Layout Calculation =====
   // ネイティブバー上のアイテム幅（Chrome の実描画を模倣）
   function calcNativeItemWidth(item) {
@@ -260,7 +266,7 @@
     if (displayMode !== "icon_only") {
       var span = document.createElement("span");
       span.className = "mrbb-title";
-      span.textContent = item.title || (item.isFolder ? "フォルダ" : "");
+      span.textContent = item.title || (item.isFolder ? t("folderDefault") : "");
       el.appendChild(span);
     }
     return el;
@@ -500,46 +506,46 @@
 
   function addItemActions(menu, id, isFolder, title, url, parentId) {
     if (!isFolder && url && url !== "#") {
-      menu.appendChild(createMenuItem("Open in new tab", function () { chrome.runtime.sendMessage({ type: "MRBB_OPEN_TAB", url: url }); }));
+      menu.appendChild(createMenuItem(t("openInNewTab"), function () { chrome.runtime.sendMessage({ type: "MRBB_OPEN_TAB", url: url }); }));
       menu.appendChild(createMenuSeparator());
     }
     if (isFolder) {
-      menu.appendChild(createMenuItem("Open all in tabs", function () { chrome.runtime.sendMessage({ type: "MRBB_OPEN_ALL_IN_TABS", folderId: id }); }));
+      menu.appendChild(createMenuItem(t("openAllInTabs"), function () { chrome.runtime.sendMessage({ type: "MRBB_OPEN_ALL_IN_TABS", folderId: id }); }));
       menu.appendChild(createMenuSeparator());
     }
-    menu.appendChild(createMenuItem("Rename", function () {
-      var n = prompt("Enter new name:", title);
+    menu.appendChild(createMenuItem(t("rename"), function () {
+      var n = prompt(t("promptNewName"), title);
       if (n !== null && n !== title) chrome.runtime.sendMessage({ type: "MRBB_UPDATE_BOOKMARK", id: id, changes: { title: n } });
     }));
     if (!isFolder) {
-      menu.appendChild(createMenuItem("Edit URL", function () {
-        var u = prompt("Enter new URL:", url);
+      menu.appendChild(createMenuItem(t("editUrl"), function () {
+        var u = prompt(t("promptNewUrl"), url);
         if (u !== null && u !== url) chrome.runtime.sendMessage({ type: "MRBB_UPDATE_BOOKMARK", id: id, changes: { url: u } });
       }));
     }
     if (parentId !== "1") {
-      menu.appendChild(createMenuItem("Move to bookmark bar", function () { chrome.runtime.sendMessage({ type: "MRBB_MOVE_BOOKMARK", id: id, destination: { parentId: "1" } }); }));
+      menu.appendChild(createMenuItem(t("moveToBookmarkBar"), function () { chrome.runtime.sendMessage({ type: "MRBB_MOVE_BOOKMARK", id: id, destination: { parentId: "1" } }); }));
     }
     menu.appendChild(createMenuSeparator());
-    menu.appendChild(createMenuItem("Delete", function () { chrome.runtime.sendMessage({ type: "MRBB_DELETE_BOOKMARK", id: id, isFolder: isFolder }); }));
+    menu.appendChild(createMenuItem(t("deleteItem"), function () { chrome.runtime.sendMessage({ type: "MRBB_DELETE_BOOKMARK", id: id, isFolder: isFolder }); }));
     menu.appendChild(createMenuSeparator());
   }
 
   function addCommonActions(menu, parentId) {
-    menu.appendChild(createMenuItem("Add page...", function () {
-      var t = prompt("Bookmark name:", document.title);
-      if (t === null) return;
-      var u = prompt("URL:", window.location.href);
-      if (u !== null) chrome.runtime.sendMessage({ type: "MRBB_CREATE_BOOKMARK", parentId: parentId, title: t, url: u });
+    menu.appendChild(createMenuItem(t("addPage"), function () {
+      var name = prompt(t("promptBookmarkName"), document.title);
+      if (name === null) return;
+      var u = prompt(t("promptUrl"), window.location.href);
+      if (u !== null) chrome.runtime.sendMessage({ type: "MRBB_CREATE_BOOKMARK", parentId: parentId, title: name, url: u });
     }));
-    menu.appendChild(createMenuItem("Add folder...", function () {
-      var t = prompt("Folder name:");
-      if (t !== null && t.trim() !== "") chrome.runtime.sendMessage({ type: "MRBB_CREATE_FOLDER", parentId: parentId, title: t.trim() });
+    menu.appendChild(createMenuItem(t("addFolder"), function () {
+      var name = prompt(t("promptFolderName"));
+      if (name !== null && name.trim() !== "") chrome.runtime.sendMessage({ type: "MRBB_CREATE_FOLDER", parentId: parentId, title: name.trim() });
     }));
     menu.appendChild(createMenuSeparator());
-    menu.appendChild(createMenuItem("Sort by name", function () { chrome.runtime.sendMessage({ type: "MRBB_SORT_BOOKMARKS", parentId: parentId, sortBy: "title" }); }));
-    menu.appendChild(createMenuItem("Sort by URL", function () { chrome.runtime.sendMessage({ type: "MRBB_SORT_BOOKMARKS", parentId: parentId, sortBy: "url" }); }));
-    menu.appendChild(createMenuItem("Sort by date added", function () { chrome.runtime.sendMessage({ type: "MRBB_SORT_BOOKMARKS", parentId: parentId, sortBy: "dateAdded" }); }));
+    menu.appendChild(createMenuItem(t("sortByName"), function () { chrome.runtime.sendMessage({ type: "MRBB_SORT_BOOKMARKS", parentId: parentId, sortBy: "title" }); }));
+    menu.appendChild(createMenuItem(t("sortByUrl"), function () { chrome.runtime.sendMessage({ type: "MRBB_SORT_BOOKMARKS", parentId: parentId, sortBy: "url" }); }));
+    menu.appendChild(createMenuItem(t("sortByDateAdded"), function () { chrome.runtime.sendMessage({ type: "MRBB_SORT_BOOKMARKS", parentId: parentId, sortBy: "dateAdded" }); }));
   }
 
   function showContextMenu(x, y, menu) {
@@ -647,7 +653,7 @@
     if (!folder.children || folder.children.length === 0) {
       var empty = document.createElement("div");
       empty.className = "mrbb-dropdown-empty";
-      empty.textContent = "(empty)";
+      empty.textContent = t("empty");
       dd.appendChild(empty);
     } else {
       for (var i = 0; i < folder.children.length; i++) {
@@ -661,6 +667,8 @@
     dd.style.left = fx(ar.left);
     dd.style.zIndex = "2147483647";
     dd.style.paddingTop = "4px";
+    // 画面下端まで自然に伸ばし、入り切らない時だけスクロール
+    dd.style.maxHeight = fx(Math.max(120, window.innerHeight - (ar.bottom - 4) - 8));
     if (shadowRoot) shadowRoot.appendChild(dd);
     activeDropdown = dd;
     activeDropdownAnchor = anchor;
@@ -714,7 +722,7 @@
         var sub = document.createElement("div");
         sub.className = "mrbb-dropdown mrbb-sub-dropdown";
         if (!item.children || item.children.length === 0) {
-          var emp = document.createElement("div"); emp.className = "mrbb-dropdown-empty"; emp.textContent = "(empty)"; sub.appendChild(emp);
+          var emp = document.createElement("div"); emp.className = "mrbb-dropdown-empty"; emp.textContent = t("empty"); sub.appendChild(emp);
         } else {
           for (var i = 0; i < item.children.length; i++) sub.appendChild(createDropdownItem(item.children[i], item.id));
         }
@@ -725,6 +733,7 @@
         sub.style.left = fx(er.right - 4);
         sub.style.paddingLeft = "4px";
         sub.style.zIndex = "2147483647";
+        sub.style.maxHeight = fx(Math.max(120, window.innerHeight - er.top - 8));
         if (shadowRoot) shadowRoot.appendChild(sub);
         var sr = sub.getBoundingClientRect();
         if (sr.right > window.innerWidth) { sub.style.left = fx(er.left - sr.width + 4); sub.style.paddingLeft = "0"; sub.style.paddingRight = "4px"; }
@@ -778,7 +787,7 @@
   function createGearButton() {
     var btn = document.createElement("div");
     btn.className = "mrbb-gear-btn";
-    btn.title = "Settings";
+    btn.title = t("settingsTooltip");
     btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M8.58 2.06A1 1 0 0 1 9.56 1h.88a1 1 0 0 1 .98.84l.18 1.28a6.02 6.02 0 0 1 1.56.64l1.08-.72a1 1 0 0 1 1.28.14l.62.62a1 1 0 0 1 .14 1.28l-.72 1.08c.28.48.48 1 .64 1.56l1.28.18a1 1 0 0 1 .84.98v.88a1 1 0 0 1-.84.98l-1.28.18a6.02 6.02 0 0 1-.64 1.56l.72 1.08a1 1 0 0 1-.14 1.28l-.62.62a1 1 0 0 1-1.28.14l-1.08-.72c-.48.28-1 .48-1.56.64l-.18 1.28a1 1 0 0 1-.98.84h-.88a1 1 0 0 1-.98-.84l-.18-1.28a6.02 6.02 0 0 1-1.56-.64l-1.08.72a1 1 0 0 1-1.28-.14l-.62-.62a1 1 0 0 1-.14-1.28l.72-1.08a6.02 6.02 0 0 1-.64-1.56l-1.28-.18A1 1 0 0 1 1 10.44v-.88a1 1 0 0 1 .84-.98l1.28-.18a6.02 6.02 0 0 1 .64-1.56l-.72-1.08a1 1 0 0 1 .14-1.28l.62-.62a1 1 0 0 1 1.28-.14l1.08.72c.48-.28 1-.48 1.56-.64l.18-1.28zM10 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg>';
     btn.addEventListener("click", function (e) { e.stopPropagation(); toggleSettingsPanel(btn); });
     return btn;
@@ -792,12 +801,12 @@
     var fs = settings.fontSize || 12;
     var bh = settings.barHeight || 36;
     panel.innerHTML = '<div class="mrbb-settings-title">Multi-Row Bookmark Bar</div>' +
-      '<div class="mrbb-settings-row"><span>Font size</span><div class="mrbb-settings-fontsize"><button data-action="fs-dec">-</button><span id="mrbb-fs-val">' + fs + 'px</span><button data-action="fs-inc">+</button></div></div>' +
-      '<div class="mrbb-settings-row"><span>Row height</span><div class="mrbb-settings-fontsize"><button data-action="bh-dec">-</button><span id="mrbb-bh-val">' + bh + 'px</span><button data-action="bh-inc">+</button></div></div>' +
-      '<div class="mrbb-settings-row"><span>Max rows (0=unlimited)</span><input type="number" id="mrbb-mr-inp" value="' + settings.maxRows + '" min="0" max="20" style="width:48px;text-align:center;border:1px solid #dadce0;border-radius:3px;padding:2px 4px;font-size:12px;"></div>' +
-      '<div class="mrbb-settings-row"><span>Folder open</span><select id="mrbb-fo-sel" style="border:1px solid #dadce0;border-radius:3px;padding:2px 4px;font-size:12px;"><option value="hover"' + (settings.folderOpenMode === "hover" ? " selected" : "") + '>Hover</option><option value="click"' + (settings.folderOpenMode === "click" ? " selected" : "") + '>Click</option></select></div>' +
-      '<div class="mrbb-settings-row"><span>Bar mode</span><select id="mrbb-bm-sel" style="border:1px solid #dadce0;border-radius:3px;padding:2px 4px;font-size:12px;"><option value="overflow"' + (settings.barMode === "overflow" ? " selected" : "") + '>Overflow only</option><option value="independent"' + (settings.barMode === "independent" ? " selected" : "") + '>All bookmarks</option></select></div>' +
-      '<div class="mrbb-settings-row"><span>開始位置調整</span><div class="mrbb-settings-fontsize"><button data-action="bo-dec" title="1つ手前から表示">◀</button><span id="mrbb-bo-val">' + (settings.boundaryOffset || 0) + '</span><button data-action="bo-inc" title="1つ後ろから表示">▶</button></div></div>';
+      '<div class="mrbb-settings-row"><span>' + t("fontSize") + '</span><div class="mrbb-settings-fontsize"><button data-action="fs-dec">-</button><span id="mrbb-fs-val">' + fs + 'px</span><button data-action="fs-inc">+</button></div></div>' +
+      '<div class="mrbb-settings-row"><span>' + t("rowHeight") + '</span><div class="mrbb-settings-fontsize"><button data-action="bh-dec">-</button><span id="mrbb-bh-val">' + bh + 'px</span><button data-action="bh-inc">+</button></div></div>' +
+      '<div class="mrbb-settings-row"><span>' + t("maxRows") + '</span><input type="number" id="mrbb-mr-inp" value="' + settings.maxRows + '" min="0" max="20" style="width:48px;text-align:center;border:1px solid #dadce0;border-radius:3px;padding:2px 4px;font-size:12px;"></div>' +
+      '<div class="mrbb-settings-row"><span>' + t("folderOpen") + '</span><select id="mrbb-fo-sel" style="border:1px solid #dadce0;border-radius:3px;padding:2px 4px;font-size:12px;"><option value="hover"' + (settings.folderOpenMode === "hover" ? " selected" : "") + '>' + t("hover") + '</option><option value="click"' + (settings.folderOpenMode === "click" ? " selected" : "") + '>' + t("click") + '</option></select></div>' +
+      '<div class="mrbb-settings-row"><span>' + t("barMode") + '</span><select id="mrbb-bm-sel" style="border:1px solid #dadce0;border-radius:3px;padding:2px 4px;font-size:12px;"><option value="overflow"' + (settings.barMode === "overflow" ? " selected" : "") + '>' + t("overflowOnly") + '</option><option value="independent"' + (settings.barMode === "independent" ? " selected" : "") + '>' + t("allBookmarks") + '</option></select></div>' +
+      '<div class="mrbb-settings-row"><span>' + t("boundaryAdjust") + '</span><div class="mrbb-settings-fontsize"><button data-action="bo-dec" title="' + t("boundaryEarlier") + '">◀</button><span id="mrbb-bo-val">' + (settings.boundaryOffset || 0) + '</span><button data-action="bo-inc" title="' + t("boundaryLater") + '">▶</button></div></div>';
 
     var gr = gearBtn.getBoundingClientRect();
     panel.style.top = fx(gr.bottom + 4);
@@ -848,10 +857,10 @@
     container.className = "mrbb-search-container";
     var btn = document.createElement("div");
     btn.className = "mrbb-search-btn";
-    btn.title = "Search bookmarks";
+    btn.title = t("searchTooltip");
     btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M8.5 3a5.5 5.5 0 0 1 4.38 8.82l4.15 4.15a.75.75 0 0 1-1.06 1.06l-4.15-4.15A5.5 5.5 0 1 1 8.5 3zm0 1.5a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/></svg>';
     var input = document.createElement("input");
-    input.type = "text"; input.className = "mrbb-search-input"; input.placeholder = "Search...";
+    input.type = "text"; input.className = "mrbb-search-input"; input.placeholder = t("searchPlaceholder");
     var debounce, resultPanel = null;
     var closeResults = function () { if (resultPanel) { resultPanel.remove(); resultPanel = null; } };
     var closeSearch = function () { input.classList.remove("mrbb-search-open"); input.value = ""; closeResults(); };
@@ -879,7 +888,7 @@
       resultPanel = document.createElement("div");
       resultPanel.className = "mrbb-search-results";
       if (results.length === 0) {
-        var emp = document.createElement("div"); emp.className = "mrbb-search-empty"; emp.textContent = "No results found"; resultPanel.appendChild(emp);
+        var emp = document.createElement("div"); emp.className = "mrbb-search-empty"; emp.textContent = t("noResults"); resultPanel.appendChild(emp);
       } else {
         for (var i = 0; i < results.length; i++) {
           var r = results[i];
