@@ -489,6 +489,31 @@ try {
     panelInfo.infoCount >= 12 && panelInfo.opened && panelInfo.openedText.length > 3 && panelInfo.closed,
     JSON.stringify(panelInfo));
 
+  // --- gear panel: language select rebuilds panel in the new language ---
+  const langSwitch = await page.evaluate(async () => {
+    const sh = document.getElementById("mrbb-host").shadowRoot;
+    const sel = sh.querySelector("#mrbb-lang-sel");
+    if (!sel) return { error: "no lang select" };
+    sel.value = "en";
+    sel.dispatchEvent(new Event("change", { bubbles: true }));
+    await new Promise(r => setTimeout(r, 600));
+    const panel = sh.querySelector(".mrbb-settings-panel");
+    const textEn = panel ? panel.textContent : "";
+    const sel2 = sh.querySelector("#mrbb-lang-sel");
+    sel2.value = "auto";
+    sel2.dispatchEvent(new Event("change", { bubbles: true }));
+    await new Promise(r => setTimeout(r, 600));
+    const textAuto = sh.querySelector(".mrbb-settings-panel")?.textContent ?? "";
+    return {
+      enHasEnglish: textEn.includes("Font size"),
+      autoBack: textAuto.includes("フォントサイズ") || textAuto.includes("Font size"),
+      panelStillOpen: !!sh.querySelector(".mrbb-settings-panel"),
+    };
+  });
+  check("gear language select switches panel language in place",
+    langSwitch.enHasEnglish && langSwitch.autoBack && langSwitch.panelStillOpen,
+    JSON.stringify(langSwitch));
+
   const fsBtnRect = await page.evaluate(() => {
     const sh = document.getElementById("mrbb-host").shadowRoot;
     const b = sh.querySelector('[data-action="fs-inc"]');

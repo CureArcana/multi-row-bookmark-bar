@@ -892,7 +892,8 @@
       '<div class="mrbb-settings-row"><span>' + t("revealDelay") + ' <span class="mrbb-info" data-info="revealDelayInfo" title="' + t("revealDelayInfo").replace(/"/g, "&quot;") + '">&#9432;</span></span><div class="mrbb-settings-fontsize"><button data-action="rd-dec">-</button><span id="mrbb-rd-val">' + (settings.revealDelayMs || 0) + 'ms</span><button data-action="rd-inc">+</button></div></div>' +
       '<div class="mrbb-settings-row"><span>' + t("autohideDelay") + ' <span class="mrbb-info" data-info="autohideDelayDesc" title="' + t("autohideDelayDesc").replace(/"/g, "&quot;") + '">&#9432;</span></span><div class="mrbb-settings-fontsize"><button data-action="ad-dec">-</button><span id="mrbb-ad-val">' + (settings.autohideDelayMs || 400) + 'ms</span><button data-action="ad-inc">+</button></div></div>' +
       '<div class="mrbb-settings-row"><span>' + t("hideOnClick") + ' <span class="mrbb-info" data-info="hideOnClickInfo" title="' + t("hideOnClickInfo").replace(/"/g, "&quot;") + '">&#9432;</span></span><input type="checkbox" id="mrbb-hoc-chk"' + (settings.hideOnClick ? " checked" : "") + '></div>' +
-      '<div class="mrbb-settings-row"><span>' + t("hideOnOutsideClick") + ' <span class="mrbb-info" data-info="hideOnOutsideClickInfo" title="' + t("hideOnOutsideClickInfo").replace(/"/g, "&quot;") + '">&#9432;</span></span><input type="checkbox" id="mrbb-hooc-chk"' + (settings.hideOnOutsideClick ? " checked" : "") + '></div>';
+      '<div class="mrbb-settings-row"><span>' + t("hideOnOutsideClick") + ' <span class="mrbb-info" data-info="hideOnOutsideClickInfo" title="' + t("hideOnOutsideClickInfo").replace(/"/g, "&quot;") + '">&#9432;</span></span><input type="checkbox" id="mrbb-hooc-chk"' + (settings.hideOnOutsideClick ? " checked" : "") + '></div>' +
+      '<div class="mrbb-settings-row"><span>' + t("language") + ' <span class="mrbb-info" data-info="languageInfo" title="' + t("languageInfo").replace(/"/g, "&quot;") + '">&#9432;</span></span><select id="mrbb-lang-sel" style="border:1px solid #dadce0;border-radius:3px;padding:2px 4px;font-size:12px;"><option value="auto"' + ((settings.language || "auto") === "auto" ? " selected" : "") + '>' + t("langAuto") + '</option><option value="en"' + (settings.language === "en" ? " selected" : "") + '>English</option><option value="ja"' + (settings.language === "ja" ? " selected" : "") + '>日本語</option></select></div>';
 
     // 表示方式が「押し下げ」の時は注意書きを常時表示
     var dbRow = panel.querySelector("#mrbb-db-sel").closest(".mrbb-settings-row");
@@ -978,6 +979,15 @@
     bindStepper('[data-action="ad-dec"]', '[data-action="ad-inc"]', "#mrbb-ad-val", "autohideDelayMs", 400, 100, 5000, 100, "ms");
     panel.querySelector("#mrbb-hoc-chk").addEventListener("change", function (e) { settings.hideOnClick = e.target.checked; saveSettings(); });
     panel.querySelector("#mrbb-hooc-chk").addEventListener("change", function (e) { settings.hideOnOutsideClick = e.target.checked; saveSettings(); });
+    panel.querySelector("#mrbb-lang-sel").addEventListener("change", function (e) {
+      settings.language = e.target.value;
+      saveSettings();
+      // 新しい言語でパネルを開き直す
+      loadI18n(settings.language).then(function () {
+        panel.remove();
+        toggleSettingsPanel(gearBtn);
+      });
+    });
     panel.querySelector("#mrbb-mr-inp").addEventListener("change", function (e) { settings.maxRows = parseInt(e.target.value, 10) || 0; saveSettings(); });
     panel.querySelector("#mrbb-fo-sel").addEventListener("change", function (e) { settings.folderOpenMode = e.target.value; saveSettings(); });
     panel.querySelector("#mrbb-bm-sel").addEventListener("change", function (e) { settings.barMode = e.target.value; saveSettings(); });

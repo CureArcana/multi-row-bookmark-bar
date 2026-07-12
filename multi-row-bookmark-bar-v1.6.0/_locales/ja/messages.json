@@ -250,5 +250,8 @@
   },
   "hideOnOutsideClickInfo": {
     "message": "バーの外側をクリックした瞬間にバーを格納します。"
+  },
+  "languageInfo": {
+    "message": "拡張のUI言語。「ブラウザに合わせる」はChromeの表示言語に従います。"
   }
 }

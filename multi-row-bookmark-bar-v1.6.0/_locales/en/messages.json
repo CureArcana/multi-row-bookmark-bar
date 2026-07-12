@@ -250,5 +250,8 @@
   },
   "hideOnOutsideClickInfo": {
     "message": "Collapse the bar immediately when clicking anywhere outside it."
+  },
+  "languageInfo": {
+    "message": "UI language of the extension. 'Match browser' follows Chrome's display language."
   }
 }
