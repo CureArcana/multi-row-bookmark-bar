@@ -1,5 +1,7 @@
 # Multi-Row Bookmark Bar
 
+[English](README.en.md) | **日本語**
+
 Chromeのブックマークバーに収まりきらない（`>>` に隠れている）ブックマークを、バーの続きとして2段目以降に表示するChrome拡張機能です。
 
 ```
