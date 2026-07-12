@@ -20,6 +20,7 @@
     autohideDelayMs: 400,
     hideOnClick: true,
     hideOnOutsideClick: true,
+    ntpMode: "custom",
   };
   const $ = (id) => document.getElementById(id);
 
@@ -38,6 +39,7 @@
     $("autohideDelayMs").value = String(s.autohideDelayMs ?? 400);
     $("hideOnClick").checked = s.hideOnClick !== false;
     $("hideOnOutsideClick").checked = s.hideOnOutsideClick !== false;
+    $("ntpMode").value = s.ntpMode || "custom";
     $("displayMode").value = s.displayMode;
     $("folderOpenMode").value = s.folderOpenMode;
     $("hoverCloseMs").value = String(s.hoverCloseMs || 400);
@@ -59,6 +61,7 @@
       autohideDelayMs: Math.max(100, Math.min(5000, parseInt($("autohideDelayMs").value, 10) || 400)),
       hideOnClick: $("hideOnClick").checked,
       hideOnOutsideClick: $("hideOnOutsideClick").checked,
+      ntpMode: $("ntpMode").value,
       displayMode: $("displayMode").value,
       folderOpenMode: $("folderOpenMode").value,
       hoverCloseMs: Math.max(100, Math.min(2000, parseInt($("hoverCloseMs").value, 10) || 400)),

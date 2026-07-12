@@ -163,6 +163,19 @@
   <div class="section">
     <label>
       <div>
+        <div class="label-text" data-i18n="ntpMode">New tab page</div>
+        <div class="label-desc" data-i18n="ntpModeDesc">Custom shows the multi-row bar on new tabs</div>
+      </div>
+      <select id="ntpMode">
+        <option value="custom" data-i18n="ntpCustom">Custom with bar</option>
+        <option value="default" data-i18n="ntpDefault">Chrome default</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="section">
+    <label>
+      <div>
         <div class="label-text" data-i18n="displayBehavior">Display</div>
         <div class="label-desc" data-i18n="displayBehaviorDesc">Auto-hide never alters page layout</div>
       </div>
@@ -285,7 +298,7 @@
     </label>
   </div>
 
-  <div class="version">v2.1.0</div>
+  <div class="version">v2.2.0</div>
 
   <script src="popup.js"></script>
 </body>

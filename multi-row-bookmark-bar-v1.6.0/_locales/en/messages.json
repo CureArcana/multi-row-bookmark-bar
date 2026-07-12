@@ -196,5 +196,23 @@
   },
   "hideOnOutsideClick": {
     "message": "Hide when clicking outside"
+  },
+  "ntpMode": {
+    "message": "New tab page"
+  },
+  "ntpModeDesc": {
+    "message": "Custom shows the multi-row bar on new tabs"
+  },
+  "ntpCustom": {
+    "message": "Custom with bar"
+  },
+  "ntpDefault": {
+    "message": "Chrome default"
+  },
+  "searchGoogle": {
+    "message": "Search Google"
+  },
+  "newTabTitle": {
+    "message": "New Tab"
   }
 }

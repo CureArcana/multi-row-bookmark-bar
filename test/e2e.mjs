@@ -686,6 +686,47 @@ try {
   await setAh({ autohideDelayMs: 400 });
   await sleep(400);
 
+  // --- NTP override: custom mode shows search + bar, default mode redirects ---
+  const ntpPage = await browser.newPage();
+  await ntpPage.goto("chrome://newtab/", { waitUntil: "load" }).catch(() => {});
+  await sleep(800);
+  const ntpCustom = await ntpPage.evaluate(() => ({
+    url: location.href,
+    hasSearch: !!document.getElementById("q"),
+    hasBar: !!document.getElementById("mrbb-host"),
+    barItems: document.getElementById("mrbb-host")?.shadowRoot?.querySelectorAll(".mrbb-item").length ?? 0,
+    autohide: document.getElementById("mrbb-host")?.classList.contains("mrbb-autohide") ?? null,
+    bodyMargin: parseFloat(getComputedStyle(document.body).marginTop),
+  })).catch(() => null);
+  check("NTP custom: extension page with search box + bar (always visible)",
+    ntpCustom && /chrome-extension:.*newtab\.html/.test(ntpCustom.url) && ntpCustom.hasSearch &&
+    ntpCustom.hasBar && ntpCustom.barItems > 0 && ntpCustom.autohide === false && ntpCustom.bodyMargin > 0,
+    JSON.stringify(ntpCustom));
+  await ntpPage.close();
+
+  await sw.evaluate(async () => {
+    const data = await chrome.storage.sync.get("mrbb-settings");
+    const s = data["mrbb-settings"] || {};
+    s.ntpMode = "default";
+    await chrome.storage.sync.set({ "mrbb-settings": s });
+  });
+  const ntpPage2 = await browser.newPage();
+  await ntpPage2.goto("chrome://newtab/", { waitUntil: "load" }).catch(() => {});
+  await sleep(1200);
+  // chrome:// の URL は拡張権限からは見えないため puppeteer 側で確認する
+  const pageUrls = (await browser.pages()).map((p) => p.url());
+  check("NTP default: redirects to Chrome standard new tab",
+    pageUrls.some((u) => u.startsWith("chrome://new-tab-page")) &&
+    !pageUrls.some((u) => u.includes("newtab.html")),
+    JSON.stringify(pageUrls));
+  await ntpPage2.close().catch(() => {});
+  await sw.evaluate(async () => {
+    const data = await chrome.storage.sync.get("mrbb-settings");
+    const s = data["mrbb-settings"] || {};
+    s.ntpMode = "custom";
+    await chrome.storage.sync.set({ "mrbb-settings": s });
+  });
+
   // --- everything fits -> bar disappears & page restored ---
   await sw.evaluate(async () => {
     const kids = await chrome.bookmarks.getChildren("1");

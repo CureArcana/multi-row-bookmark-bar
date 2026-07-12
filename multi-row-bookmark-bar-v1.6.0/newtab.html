@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>New Tab</title>
+  <style>
+    /* ntpMode の判定が済むまで非表示（標準NTPへ転送する場合のチラつき防止） */
+    body { visibility: hidden; }
+    body.ready { visibility: visible; }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: "Segoe UI", "Yu Gothic UI", Meiryo, system-ui, sans-serif;
+      background: #ffffff; color: #1f1f1f;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    #wrap {
+      display: flex; flex-direction: column; align-items: center;
+      margin-top: 22vh; width: 100%; padding: 0 24px;
+    }
+    #logo {
+      font-size: 76px; font-weight: 500; letter-spacing: -3px;
+      margin-bottom: 28px; user-select: none;
+    }
+    #logo span:nth-child(1) { color: #4285f4; }
+    #logo span:nth-child(2) { color: #ea4335; }
+    #logo span:nth-child(3) { color: #fbbc05; }
+    #logo span:nth-child(4) { color: #4285f4; }
+    #logo span:nth-child(5) { color: #34a853; }
+    #logo span:nth-child(6) { color: #ea4335; }
+    #sf { width: 100%; max-width: 580px; }
+    #q {
+      width: 100%; height: 46px; padding: 0 48px 0 20px;
+      font-size: 16px; font-family: inherit;
+      border: 1px solid #dfe1e5; border-radius: 24px;
+      outline: none; background: #fff; color: #1f1f1f;
+      box-shadow: none; transition: box-shadow 0.15s;
+    }
+    #q:hover, #q:focus { box-shadow: 0 1px 6px rgba(32,33,36,0.28); border-color: transparent; }
+    .searchbox { position: relative; }
+    .searchbox svg {
+      position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
+      pointer-events: none; fill: #9aa0a6;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background: #202124; color: #e8eaed; }
+      #q { background: #303134; border-color: #5f6368; color: #e8eaed; }
+      #q:hover, #q:focus { box-shadow: 0 1px 6px rgba(0,0,0,0.5); border-color: transparent; }
+    }
+  </style>
+</head>
+<body>
+  <div id="wrap">
+    <h1 id="logo"><span>G</span><span>o</span><span>o</span><span>g</span><span>l</span><span>e</span></h1>
+    <form id="sf" action="https://www.google.com/search" method="GET">
+      <div class="searchbox">
+        <input type="text" name="q" id="q" autofocus autocomplete="off">
+        <svg width="20" height="20" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z"/></svg>
+      </div>
+    </form>
+  </div>
+  <script src="newtab.js"></script>
+  <script src="content.js"></script>
+</body>
+</html>

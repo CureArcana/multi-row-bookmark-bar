@@ -196,5 +196,23 @@
   },
   "hideOnOutsideClick": {
     "message": "バーの外をクリックで隠す"
+  },
+  "ntpMode": {
+    "message": "新しいタブページ"
+  },
+  "ntpModeDesc": {
+    "message": "カスタムは新しいタブに多段バーを表示します"
+  },
+  "ntpCustom": {
+    "message": "多段バー付きカスタム"
+  },
+  "ntpDefault": {
+    "message": "Chrome標準"
+  },
+  "searchGoogle": {
+    "message": "Google で検索"
+  },
+  "newTabTitle": {
+    "message": "新しいタブ"
   }
 }

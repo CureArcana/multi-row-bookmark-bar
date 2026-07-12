@@ -6,6 +6,9 @@
   var HOST_ID = "mrbb-host";
   var STORAGE_KEY = "mrbb-settings";
   var FIXED_MARK = "data-mrbb-fixed-adjusted";
+  // 拡張自身の新しいタブページ（newtab.html が content.js を直接読み込む）。
+  // 自前ページなので押し下げが安全 → オートハイドせず常時表示にする
+  var IS_EXT_NTP = location.protocol === "chrome-extension:" && /newtab\.html$/.test(location.pathname);
   var DEFAULT_SETTINGS = {
     enabled: true, maxRows: 0, displayMode: "both",
     folderOpenMode: "hover", showCondition: "always",
@@ -22,7 +25,8 @@
     revealDelayMs: 0,         // 上端に触れてから表示するまでの遅延（誤爆防止）
     autohideDelayMs: 400,     // エリアから外れてから隠すまでの時間
     hideOnClick: true,        // バー内のブックマークを開いたら即座に隠す
-    hideOnOutsideClick: true  // バーの外をクリックしたら即座に隠す
+    hideOnOutsideClick: true, // バーの外をクリックしたら即座に隠す
+    ntpMode: "custom"         // 新しいタブ: "custom"=多段バー付きページ / "default"=Chrome標準へ転送
   };
 
   // Chrome ネイティブバーの寸法モデル
@@ -1025,7 +1029,7 @@
   // ===== Auto-hide overlay =====
   // ページのレイアウトには一切触れず、バーは普段画面外(上)に隠しておき、
   // カーソルが画面最上部に来たら表示する。どのサイトも壊れない根本対策
-  function isAutohide() { return settings.displayBehavior !== "push"; }
+  function isAutohide() { return !IS_EXT_NTP && settings.displayBehavior !== "push"; }
 
   function showBar() {
     if (!hostEl || barShown) return;
@@ -1220,7 +1224,7 @@
     if (!settings.enabled) { removeBar(); return; }
     if (settings.showCondition === "new_tab_only") {
       var href = location.href;
-      if (!(href === "chrome://newtab/" || href.startsWith("chrome-search://") || href === "about:blank" || href === "chrome://new-tab-page/")) { removeBar(); return; }
+      if (!(IS_EXT_NTP || href === "chrome://newtab/" || href.startsWith("chrome-search://") || href === "about:blank" || href === "chrome://new-tab-page/")) { removeBar(); return; }
     }
     // ネイティブバーの状態で動作を切替（Ctrl+Shift+B や F11 に動的追従）
     var barState = nativeBarState();

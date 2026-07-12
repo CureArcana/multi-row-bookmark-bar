@@ -20,6 +20,7 @@
     autohideDelayMs: 400,
     hideOnClick: true,
     hideOnOutsideClick: true,
+    ntpMode: "custom",
   };
 
   function mapBookmark(node) {
