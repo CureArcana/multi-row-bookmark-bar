@@ -1,69 +1,164 @@
 {
-  "extName": { "message": "Multi-Row Bookmark Bar" },
-  "extDesc": { "message": "Automatically shows overflowing bookmarks in extra rows below the bookmarks bar." },
-  "openInNewTab": { "message": "Open in new tab" },
-  "openAllInTabs": { "message": "Open all in tabs" },
-  "rename": { "message": "Rename" },
-  "editUrl": { "message": "Edit URL" },
-  "moveToBookmarkBar": { "message": "Move to bookmark bar" },
-  "deleteItem": { "message": "Delete" },
-  "addPage": { "message": "Add page..." },
-  "addFolder": { "message": "Add folder..." },
-  "sortByName": { "message": "Sort by name" },
-  "sortByUrl": { "message": "Sort by URL" },
-  "sortByDateAdded": { "message": "Sort by date added" },
-  "promptNewName": { "message": "Enter new name:" },
-  "promptNewUrl": { "message": "Enter new URL:" },
-  "promptBookmarkName": { "message": "Bookmark name:" },
-  "promptUrl": { "message": "URL:" },
-  "promptFolderName": { "message": "Folder name:" },
-  "empty": { "message": "(empty)" },
-  "folderDefault": { "message": "Folder" },
-  "searchPlaceholder": { "message": "Search..." },
-  "noResults": { "message": "No results found" },
-  "settingsTooltip": { "message": "Settings" },
-  "searchTooltip": { "message": "Search bookmarks" },
-  "fontSize": { "message": "Font size" },
-  "fontSizeUnit": { "message": "Font size (px)" },
-  "rowHeight": { "message": "Row height" },
-  "rowHeightUnit": { "message": "Row height (px)" },
-  "maxRows": { "message": "Max rows (0 = unlimited)" },
-  "maxRowsShort": { "message": "Max rows" },
-  "maxRowsDesc": { "message": "0 = unlimited" },
-  "folderOpen": { "message": "Folder open" },
-  "hover": { "message": "Hover" },
-  "click": { "message": "Click" },
-  "barMode": { "message": "Bar mode" },
-  "barModeDesc": { "message": "Overflow = continue from hidden bookmarks" },
-  "overflowOnly": { "message": "Overflow only" },
-  "allBookmarks": { "message": "All bookmarks" },
-  "boundaryAdjust": { "message": "Start position" },
-  "boundaryEarlier": { "message": "Start one bookmark earlier" },
-  "boundaryLater": { "message": "Start one bookmark later" },
-  "boundaryOffsetDesc": { "message": "Reserve adjustment in px (+ = start earlier)" },
-  "hoverCloseDelay": { "message": "Folder close delay" },
-  "hoverCloseDelayDesc": { "message": "ms until a hovered folder closes (100 - 2000)" },
-  "calibOpen": { "message": "Auto-calibrate boundary..." },
-  "calibTitle": { "message": "Auto-calibration" },
-  "calibIntro": { "message": "Reads the actual bookmarks bar via a one-time screen capture and aligns the extension bar boundary exactly. Nothing is recorded or sent anywhere — a single frame is analyzed locally and discarded." },
-  "calibStep1": { "message": "Click the button below." },
-  "calibStep2": { "message": "In the picker, choose this Chrome window (or the entire screen) and press Share." },
-  "calibStep3": { "message": "The capture stops automatically after a single frame." },
-  "calibStart": { "message": "Start calibration" },
-  "calibAnalyzing": { "message": "Analyzing..." },
-  "calibDone": { "message": "Calibration complete. The extension bar now starts right after the last visible bookmark." },
-  "calibFailCapture": { "message": "Capture was cancelled or failed." },
-  "calibFailNoChevron": { "message": "Could not locate the bookmarks bar in the capture. Make sure this Chrome window was selected and the bookmarks bar is visible." },
-  "calibNoOverflow": { "message": "No overflow detected — all bookmarks fit in the native bar, so there is nothing to calibrate." },
-  "calibLowConfidence": { "message": "Note: low confidence match. If the boundary looks off, use the gear panel to fine-tune." },
-  "enabled": { "message": "Enabled" },
-  "displayMode": { "message": "Display mode" },
-  "iconText": { "message": "Icon + Text" },
-  "iconOnly": { "message": "Icon only" },
-  "textOnly": { "message": "Text only" },
-  "showCondition": { "message": "Show condition" },
-  "always": { "message": "Always" },
-  "newTabOnly": { "message": "New tab only" },
-  "range820": { "message": "8 - 20" },
-  "range2060": { "message": "20 - 60" }
+  "extName": {
+    "message": "Multi-Row Bookmark Bar"
+  },
+  "extDesc": {
+    "message": "Automatically shows overflowing bookmarks in extra rows below the bookmarks bar."
+  },
+  "openInNewTab": {
+    "message": "Open in new tab"
+  },
+  "openAllInTabs": {
+    "message": "Open all in tabs"
+  },
+  "rename": {
+    "message": "Rename"
+  },
+  "editUrl": {
+    "message": "Edit URL"
+  },
+  "moveToBookmarkBar": {
+    "message": "Move to bookmark bar"
+  },
+  "deleteItem": {
+    "message": "Delete"
+  },
+  "addPage": {
+    "message": "Add page..."
+  },
+  "addFolder": {
+    "message": "Add folder..."
+  },
+  "sortByName": {
+    "message": "Sort by name"
+  },
+  "sortByUrl": {
+    "message": "Sort by URL"
+  },
+  "sortByDateAdded": {
+    "message": "Sort by date added"
+  },
+  "promptNewName": {
+    "message": "Enter new name:"
+  },
+  "promptNewUrl": {
+    "message": "Enter new URL:"
+  },
+  "promptBookmarkName": {
+    "message": "Bookmark name:"
+  },
+  "promptUrl": {
+    "message": "URL:"
+  },
+  "promptFolderName": {
+    "message": "Folder name:"
+  },
+  "empty": {
+    "message": "(empty)"
+  },
+  "folderDefault": {
+    "message": "Folder"
+  },
+  "searchPlaceholder": {
+    "message": "Search..."
+  },
+  "noResults": {
+    "message": "No results found"
+  },
+  "settingsTooltip": {
+    "message": "Settings"
+  },
+  "searchTooltip": {
+    "message": "Search bookmarks"
+  },
+  "fontSize": {
+    "message": "Font size"
+  },
+  "fontSizeUnit": {
+    "message": "Font size (px)"
+  },
+  "rowHeight": {
+    "message": "Row height"
+  },
+  "rowHeightUnit": {
+    "message": "Row height (px)"
+  },
+  "maxRows": {
+    "message": "Max rows (0 = unlimited)"
+  },
+  "maxRowsShort": {
+    "message": "Max rows"
+  },
+  "maxRowsDesc": {
+    "message": "0 = unlimited"
+  },
+  "folderOpen": {
+    "message": "Folder open"
+  },
+  "hover": {
+    "message": "Hover"
+  },
+  "click": {
+    "message": "Click"
+  },
+  "barMode": {
+    "message": "Bar mode"
+  },
+  "barModeDesc": {
+    "message": "Overflow = continue from hidden bookmarks"
+  },
+  "overflowOnly": {
+    "message": "Overflow only"
+  },
+  "allBookmarks": {
+    "message": "All bookmarks"
+  },
+  "boundaryAdjust": {
+    "message": "Start position"
+  },
+  "boundaryEarlier": {
+    "message": "Start one bookmark earlier"
+  },
+  "boundaryLater": {
+    "message": "Start one bookmark later"
+  },
+  "boundaryOffsetDesc": {
+    "message": "Reserve adjustment in px (+ = start earlier)"
+  },
+  "hoverCloseDelay": {
+    "message": "Folder close delay"
+  },
+  "hoverCloseDelayDesc": {
+    "message": "ms until a hovered folder closes (100 - 2000)"
+  },
+  "enabled": {
+    "message": "Enabled"
+  },
+  "displayMode": {
+    "message": "Display mode"
+  },
+  "iconText": {
+    "message": "Icon + Text"
+  },
+  "iconOnly": {
+    "message": "Icon only"
+  },
+  "textOnly": {
+    "message": "Text only"
+  },
+  "showCondition": {
+    "message": "Show condition"
+  },
+  "always": {
+    "message": "Always"
+  },
+  "newTabOnly": {
+    "message": "New tab only"
+  },
+  "range820": {
+    "message": "8 - 20"
+  },
+  "range2060": {
+    "message": "20 - 60"
+  }
 }

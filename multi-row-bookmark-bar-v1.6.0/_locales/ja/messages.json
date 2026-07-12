@@ -1,69 +1,164 @@
 {
-  "extName": { "message": "Multi-Row Bookmark Bar" },
-  "extDesc": { "message": "ブックマークバーを自動で多段表示。収まりきらないブックマークも一目で見える。" },
-  "openInNewTab": { "message": "新しいタブで開く" },
-  "openAllInTabs": { "message": "すべてタブで開く" },
-  "rename": { "message": "名前を変更" },
-  "editUrl": { "message": "URLを編集" },
-  "moveToBookmarkBar": { "message": "ブックマークバーへ移動" },
-  "deleteItem": { "message": "削除" },
-  "addPage": { "message": "ページを追加..." },
-  "addFolder": { "message": "フォルダを追加..." },
-  "sortByName": { "message": "名前順に並べ替え" },
-  "sortByUrl": { "message": "URL順に並べ替え" },
-  "sortByDateAdded": { "message": "追加日順に並べ替え" },
-  "promptNewName": { "message": "新しい名前:" },
-  "promptNewUrl": { "message": "新しいURL:" },
-  "promptBookmarkName": { "message": "ブックマーク名:" },
-  "promptUrl": { "message": "URL:" },
-  "promptFolderName": { "message": "フォルダ名:" },
-  "empty": { "message": "(空)" },
-  "folderDefault": { "message": "フォルダ" },
-  "searchPlaceholder": { "message": "検索..." },
-  "noResults": { "message": "見つかりませんでした" },
-  "settingsTooltip": { "message": "設定" },
-  "searchTooltip": { "message": "ブックマークを検索" },
-  "fontSize": { "message": "フォントサイズ" },
-  "fontSizeUnit": { "message": "フォントサイズ (px)" },
-  "rowHeight": { "message": "行の高さ" },
-  "rowHeightUnit": { "message": "行の高さ (px)" },
-  "maxRows": { "message": "最大行数 (0 = 無制限)" },
-  "maxRowsShort": { "message": "最大行数" },
-  "maxRowsDesc": { "message": "0 = 無制限" },
-  "folderOpen": { "message": "フォルダの開き方" },
-  "hover": { "message": "ホバー" },
-  "click": { "message": "クリック" },
-  "barMode": { "message": "バーモード" },
-  "barModeDesc": { "message": "オーバーフロー = 隠れた分の続きから表示" },
-  "overflowOnly": { "message": "隠れた分のみ" },
-  "allBookmarks": { "message": "すべてのブックマーク" },
-  "boundaryAdjust": { "message": "開始位置調整" },
-  "boundaryEarlier": { "message": "1つ手前から表示" },
-  "boundaryLater": { "message": "1つ後ろから表示" },
-  "boundaryOffsetDesc": { "message": "px単位の補正 (プラス = 手前から表示)" },
-  "hoverCloseDelay": { "message": "フォルダを閉じるまでの時間" },
-  "hoverCloseDelayDesc": { "message": "カーソルが離れてから閉じるまでのms (100 - 2000)" },
-  "calibOpen": { "message": "境界を自動キャリブレーション..." },
-  "calibTitle": { "message": "自動キャリブレーション" },
-  "calibIntro": { "message": "1回だけ画面キャプチャして本物のブックマークバーを読み取り、拡張バーの開始位置を実測で正確に合わせます。録画・送信は一切せず、1フレームをローカルで解析して破棄します。" },
-  "calibStep1": { "message": "下のボタンを押す" },
-  "calibStep2": { "message": "選択ダイアログでこのChromeウィンドウ（または画面全体）を選んで共有" },
-  "calibStep3": { "message": "1フレーム取得後、キャプチャは自動で停止します" },
-  "calibStart": { "message": "キャリブレーション開始" },
-  "calibAnalyzing": { "message": "解析中..." },
-  "calibDone": { "message": "キャリブレーション完了。拡張バーは最後に表示されているブックマークの続きから始まります。" },
-  "calibFailCapture": { "message": "キャプチャがキャンセルされたか失敗しました。" },
-  "calibFailNoChevron": { "message": "キャプチャからブックマークバーを見つけられませんでした。このChromeウィンドウを選択したか、ブックマークバーが表示されているか確認してください。" },
-  "calibNoOverflow": { "message": "オーバーフローがありません — 全ブックマークがネイティブバーに収まっているため、調整の必要はありません。" },
-  "calibLowConfidence": { "message": "注: 一致の確度が低めです。境界がズレて見える場合はギアパネルで微調整してください。" },
-  "enabled": { "message": "有効" },
-  "displayMode": { "message": "表示モード" },
-  "iconText": { "message": "アイコン + テキスト" },
-  "iconOnly": { "message": "アイコンのみ" },
-  "textOnly": { "message": "テキストのみ" },
-  "showCondition": { "message": "表示条件" },
-  "always": { "message": "常に表示" },
-  "newTabOnly": { "message": "新しいタブのみ" },
-  "range820": { "message": "8 - 20" },
-  "range2060": { "message": "20 - 60" }
+  "extName": {
+    "message": "Multi-Row Bookmark Bar"
+  },
+  "extDesc": {
+    "message": "ブックマークバーを自動で多段表示。収まりきらないブックマークも一目で見える。"
+  },
+  "openInNewTab": {
+    "message": "新しいタブで開く"
+  },
+  "openAllInTabs": {
+    "message": "すべてタブで開く"
+  },
+  "rename": {
+    "message": "名前を変更"
+  },
+  "editUrl": {
+    "message": "URLを編集"
+  },
+  "moveToBookmarkBar": {
+    "message": "ブックマークバーへ移動"
+  },
+  "deleteItem": {
+    "message": "削除"
+  },
+  "addPage": {
+    "message": "ページを追加..."
+  },
+  "addFolder": {
+    "message": "フォルダを追加..."
+  },
+  "sortByName": {
+    "message": "名前順に並べ替え"
+  },
+  "sortByUrl": {
+    "message": "URL順に並べ替え"
+  },
+  "sortByDateAdded": {
+    "message": "追加日順に並べ替え"
+  },
+  "promptNewName": {
+    "message": "新しい名前:"
+  },
+  "promptNewUrl": {
+    "message": "新しいURL:"
+  },
+  "promptBookmarkName": {
+    "message": "ブックマーク名:"
+  },
+  "promptUrl": {
+    "message": "URL:"
+  },
+  "promptFolderName": {
+    "message": "フォルダ名:"
+  },
+  "empty": {
+    "message": "(空)"
+  },
+  "folderDefault": {
+    "message": "フォルダ"
+  },
+  "searchPlaceholder": {
+    "message": "検索..."
+  },
+  "noResults": {
+    "message": "見つかりませんでした"
+  },
+  "settingsTooltip": {
+    "message": "設定"
+  },
+  "searchTooltip": {
+    "message": "ブックマークを検索"
+  },
+  "fontSize": {
+    "message": "フォントサイズ"
+  },
+  "fontSizeUnit": {
+    "message": "フォントサイズ (px)"
+  },
+  "rowHeight": {
+    "message": "行の高さ"
+  },
+  "rowHeightUnit": {
+    "message": "行の高さ (px)"
+  },
+  "maxRows": {
+    "message": "最大行数 (0 = 無制限)"
+  },
+  "maxRowsShort": {
+    "message": "最大行数"
+  },
+  "maxRowsDesc": {
+    "message": "0 = 無制限"
+  },
+  "folderOpen": {
+    "message": "フォルダの開き方"
+  },
+  "hover": {
+    "message": "ホバー"
+  },
+  "click": {
+    "message": "クリック"
+  },
+  "barMode": {
+    "message": "バーモード"
+  },
+  "barModeDesc": {
+    "message": "オーバーフロー = 隠れた分の続きから表示"
+  },
+  "overflowOnly": {
+    "message": "隠れた分のみ"
+  },
+  "allBookmarks": {
+    "message": "すべてのブックマーク"
+  },
+  "boundaryAdjust": {
+    "message": "開始位置調整"
+  },
+  "boundaryEarlier": {
+    "message": "1つ手前から表示"
+  },
+  "boundaryLater": {
+    "message": "1つ後ろから表示"
+  },
+  "boundaryOffsetDesc": {
+    "message": "px単位の補正 (プラス = 手前から表示)"
+  },
+  "hoverCloseDelay": {
+    "message": "フォルダを閉じるまでの時間"
+  },
+  "hoverCloseDelayDesc": {
+    "message": "カーソルが離れてから閉じるまでのms (100 - 2000)"
+  },
+  "enabled": {
+    "message": "有効"
+  },
+  "displayMode": {
+    "message": "表示モード"
+  },
+  "iconText": {
+    "message": "アイコン + テキスト"
+  },
+  "iconOnly": {
+    "message": "アイコンのみ"
+  },
+  "textOnly": {
+    "message": "テキストのみ"
+  },
+  "showCondition": {
+    "message": "表示条件"
+  },
+  "always": {
+    "message": "常に表示"
+  },
+  "newTabOnly": {
+    "message": "新しいタブのみ"
+  },
+  "range820": {
+    "message": "8 - 20"
+  },
+  "range2060": {
+    "message": "20 - 60"
+  }
 }

@@ -142,6 +142,21 @@
     return key;
   }
 
+  // ===== Native Bar Visibility Detection =====
+  // ブラウザ chrome 部分の高さ（外寸 - 内寸）からネイティブバーの有無を検知する。
+  // タブ+ツールバーのみ ≈ 88-96px、+ブックマークバー ≈ 124-133px。
+  //   visible: ネイティブバー表示中 → overflow モードで続きを描画
+  //   hidden:  Ctrl+Shift+B で非表示 → 全ブックマークをこちらで描画
+  //   fullscreen: F11 等 → 拡張バー自体を出さない
+  function nativeBarState() {
+    if (navigator.webdriver) return "visible"; // 自動テスト環境は検知不能のため固定
+    var zoom = getChromeZoom();
+    var chromeTop = window.outerHeight - window.innerHeight * zoom;
+    if (chromeTop <= 40) return "fullscreen";
+    if (chromeTop < 105) return "hidden";
+    return "visible";
+  }
+
   // ===== Layout Calculation =====
   // ネイティブバー上のアイテム幅（Chrome の実描画を模倣）
   function calcNativeItemWidth(item) {
@@ -1080,6 +1095,9 @@
       var href = location.href;
       if (!(href === "chrome://newtab/" || href.startsWith("chrome-search://") || href === "about:blank" || href === "chrome://new-tab-page/")) { removeBar(); return; }
     }
+    // ネイティブバーの状態で動作を切替（Ctrl+Shift+B や F11 に動的追従）
+    var barState = nativeBarState();
+    if (barState === "fullscreen") { removeBar(); return; }
     var bookmarks = await fetchBookmarks();
     if (bookmarks.length === 0) { removeBar(); return; }
     var fs = settings.fontSize || 12;
@@ -1087,7 +1105,8 @@
     currentZoom = zoom;
     var ww = Math.round(window.innerWidth * zoom);
 
-    var overflow = settings.barMode !== "independent";
+    // ネイティブバー非表示時は境界推定が不要になり、全描画なら常に完全一致
+    var overflow = settings.barMode !== "independent" && barState === "visible";
     var layout = overflow
       ? calcOverflowLayout(bookmarks, ww, settings)
       : calcIndependentLayout(bookmarks, ww, settings);

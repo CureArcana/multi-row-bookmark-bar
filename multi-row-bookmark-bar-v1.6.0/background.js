@@ -268,6 +268,13 @@
   chrome.bookmarks.onChanged.addListener(notifyAllTabs);
   chrome.bookmarks.onMoved.addListener(notifyAllTabs);
 
+  // タブグループのチップはネイティブバーの幅を消費する → 増減・改名で境界を即再計算
+  if (chrome.tabGroups) {
+    chrome.tabGroups.onCreated.addListener(notifyAllTabs);
+    chrome.tabGroups.onRemoved.addListener(notifyAllTabs);
+    chrome.tabGroups.onUpdated.addListener(notifyAllTabs);
+  }
+
   // Alt+Shift+B でバーの表示/非表示をトグル
   // （Ctrl+Shift+B は Chrome 本体のネイティブバー切替に取られるため使えない）
   if (chrome.commands) {
