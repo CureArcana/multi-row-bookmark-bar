@@ -270,6 +270,43 @@
   function isDragging() { return dragId !== null; }
   function setExternalDragId(id) { dragId = id; }
 
+  // ネイティブバーやページからのドラッグ（URL 付き）を受け入れるか
+  function hasUriData(dt) {
+    try {
+      for (var i = 0; i < dt.types.length; i++) {
+        if (dt.types[i] === "text/uri-list" || dt.types[i] === "text/plain") return true;
+      }
+    } catch (e) { /* ignore */ }
+    return false;
+  }
+
+  // ドラッグ開始をバックグラウンドに通知（ネイティブバーへのドロップで
+  // Chrome が複製を作った時に、元を消して「移動」にするため）
+  function notifyDragStart(id, url) {
+    try { chrome.runtime.sendMessage({ type: "MRBB_DRAG_START", id: id, url: url || null }); } catch (e) { /* ignore */ }
+  }
+  function notifyDragEnd() {
+    try { chrome.runtime.sendMessage({ type: "MRBB_DRAG_END" }); } catch (e) { /* ignore */ }
+  }
+
+  // 外部ドラッグ（ネイティブバー / ページ上のリンク）のドロップ処理
+  function executeExternalDrop(dt) {
+    if (!dropTarget) { cleanupDrag(); return; }
+    var uri = "";
+    try { uri = dt.getData("text/uri-list") || dt.getData("text/plain") || ""; } catch (e) { /* ignore */ }
+    var url = uri.split("\n")[0].trim();
+    if (!url || !/^https?:|^ftp:|^file:|^chrome:|^edge:|^about:/i.test(url)) { cleanupDrag(); return; }
+    var title = "";
+    try {
+      var html = dt.getData("text/html");
+      if (html) title = new DOMParser().parseFromString(html, "text/html").body.textContent.trim();
+    } catch (e) { /* ignore */ }
+    var dest = { parentId: dropTarget.parentId };
+    if (dropTarget.index !== undefined) dest.index = dropTarget.index;
+    chrome.runtime.sendMessage({ type: "MRBB_EXTERNAL_DROP", url: url, title: title, destination: dest });
+    cleanupDrag();
+  }
+
   function getDropIndicator() {
     if (!dropIndicatorEl) {
       dropIndicatorEl = document.createElement("div");
@@ -315,7 +352,15 @@
       dragId = item.dataset.bmId;
       item.classList.add("mrbb-dragging");
       e.dataTransfer.effectAllowed = "move";
-      e.dataTransfer.setData("text/plain", dragId);
+      // URL を載せておくと Chrome ネイティブバーへのドロップが可能になる
+      var href = item.getAttribute("href");
+      if (href && href !== "#") {
+        e.dataTransfer.setData("text/uri-list", href);
+        e.dataTransfer.setData("text/plain", href);
+      } else {
+        e.dataTransfer.setData("text/plain", dragId);
+      }
+      notifyDragStart(dragId, href && href !== "#" ? href : null);
       if (e.dataTransfer.setDragImage) {
         var clone = item.cloneNode(true);
         clone.style.opacity = "0.8";
@@ -330,7 +375,7 @@
 
     container.addEventListener("dragover", function (e) {
       e.preventDefault();
-      if (!dragId) return;
+      if (!dragId && !hasUriData(e.dataTransfer)) return;
       e.dataTransfer.dropEffect = "move";
       var rows = container.querySelectorAll(".mrbb-row");
       var targetRow = null;
@@ -351,6 +396,7 @@
           var fid = items[i].dataset.bmId;
           if (fid) dropTarget = { parentId: fid };
           removeIndicator();
+          e.stopPropagation();
           return;
         }
         var mid = ir.left + ir.width / 2;
@@ -380,14 +426,18 @@
       }
     });
 
-    container.addEventListener("dragend", function () { cleanupDrag(); });
-    container.addEventListener("drop", function (e) { e.preventDefault(); executeMove(); });
+    container.addEventListener("dragend", function () { cleanupDrag(); notifyDragEnd(); });
+    container.addEventListener("drop", function (e) {
+      e.preventDefault();
+      if (dragId) { executeMove(); return; }
+      executeExternalDrop(e.dataTransfer);
+    });
   }
 
   function setupDropdownDragDrop(dropdown, parentId) {
     dropdown.addEventListener("dragover", function (e) {
       e.preventDefault(); e.stopPropagation();
-      if (!dragId) return;
+      if (!dragId && !hasUriData(e.dataTransfer)) return;
       e.dataTransfer.dropEffect = "move";
       var rows = Array.from(dropdown.querySelectorAll(".mrbb-dropdown-row"));
       var ind = getDropIndicator();
@@ -423,7 +473,11 @@
         dropTarget = { parentId: parentId, index: rows.length };
       }
     });
-    dropdown.addEventListener("drop", function (e) { e.preventDefault(); e.stopPropagation(); executeMove(); });
+    dropdown.addEventListener("drop", function (e) {
+      e.preventDefault(); e.stopPropagation();
+      if (dragId) { executeMove(); return; }
+      executeExternalDrop(e.dataTransfer);
+    });
   }
 
   // ===== Context Menu =====
@@ -635,8 +689,15 @@
       e.stopPropagation();
       setExternalDragId(item.id);
       e.dataTransfer.effectAllowed = "move";
-      e.dataTransfer.setData("text/plain", item.id);
+      if (item.url) {
+        e.dataTransfer.setData("text/uri-list", item.url);
+        e.dataTransfer.setData("text/plain", item.url);
+      } else {
+        e.dataTransfer.setData("text/plain", item.id);
+      }
+      notifyDragStart(item.id, item.url || null);
     });
+    el.addEventListener("dragend", function () { notifyDragEnd(); });
 
     if (item.isFolder) {
       el.classList.add("mrbb-dropdown-folder");

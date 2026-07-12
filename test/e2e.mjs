@@ -222,6 +222,88 @@ try {
   await setOffset(0);
   await sleep(500);
 
+  // --- folder icon is GM3 outline (native style) ---
+  const iconCheck = await page.evaluate(() => {
+    const sh = document.getElementById("mrbb-host").shadowRoot;
+    const span = sh.querySelector(".mrbb-folder-icon");
+    return span ? getComputedStyle(span).webkitMaskImage : null;
+  });
+  check("folder icon is GM3 outline (mask svg)", iconCheck && iconCheck.includes("M160-160"),
+    iconCheck ? iconCheck.slice(0, 60) + "..." : "null");
+
+  // --- native->ext: external URI drop moves an existing bookmark (no duplicate) ---
+  const extDrop = await page.evaluate(() => {
+    const sh = document.getElementById("mrbb-host").shadowRoot;
+    const root = sh.getElementById("mrbb-root");
+    const items = [...sh.querySelectorAll(".mrbb-item:not(.mrbb-folder)")];
+    const target = items[1];
+    const tr = target.getBoundingClientRect();
+    const dt = new DataTransfer();
+    dt.setData("text/uri-list", "https://example.com/page1"); // Bookmark-01: native row 0 side
+    dt.setData("text/plain", "https://example.com/page1");
+    const opts = { bubbles: true, composed: true, dataTransfer: dt, clientX: tr.left + 2, clientY: tr.top + tr.height / 2 };
+    root.dispatchEvent(new DragEvent("dragover", opts));
+    root.dispatchEvent(new DragEvent("drop", opts));
+    return { targetIdx: parseInt(target.dataset.bmIndex, 10) };
+  });
+  await sleep(800);
+  const movedCheck = await sw.evaluate(async () => {
+    const res = await chrome.bookmarks.search({ url: "https://example.com/page1" });
+    return { count: res.length, index: res[0]?.index, parentId: res[0]?.parentId };
+  });
+  check("native->ext drop moves bookmark (no duplicate)",
+    movedCheck.count === 1 && movedCheck.parentId === "1" && movedCheck.index >= extDrop.targetIdx - 1,
+    JSON.stringify({ movedCheck, targetIdx: extDrop.targetIdx }));
+
+  // --- unknown URL drop creates a bookmark at position ---
+  await page.evaluate(() => {
+    const sh = document.getElementById("mrbb-host").shadowRoot;
+    const root = sh.getElementById("mrbb-root");
+    const items = [...sh.querySelectorAll(".mrbb-item:not(.mrbb-folder)")];
+    const tr = items[2].getBoundingClientRect();
+    const dt = new DataTransfer();
+    dt.setData("text/uri-list", "https://newly-dropped.example/x");
+    dt.setData("text/html", "<a href='https://newly-dropped.example/x'>Dropped Link</a>");
+    const opts = { bubbles: true, composed: true, dataTransfer: dt, clientX: tr.left + 2, clientY: tr.top + tr.height / 2 };
+    root.dispatchEvent(new DragEvent("dragover", opts));
+    root.dispatchEvent(new DragEvent("drop", opts));
+  });
+  await sleep(800);
+  const createdCheck = await sw.evaluate(async () => {
+    const res = await chrome.bookmarks.search({ url: "https://newly-dropped.example/x" });
+    return { count: res.length, parentId: res[0]?.parentId, title: res[0]?.title };
+  });
+  check("unknown URL drop creates bookmark with title",
+    createdCheck.count === 1 && createdCheck.parentId === "1" && createdCheck.title === "Dropped Link",
+    JSON.stringify(createdCheck));
+
+  // --- ext->native: Chrome-created duplicate turns into a move (original removed) ---
+  const dragMove = await page.evaluate(() => {
+    const sh = document.getElementById("mrbb-host").shadowRoot;
+    const items = [...sh.querySelectorAll(".mrbb-item.mrbb-link")];
+    const src = items[items.length - 1];
+    const dt = new DataTransfer();
+    src.dispatchEvent(new DragEvent("dragstart", { bubbles: true, composed: true, dataTransfer: dt }));
+    return { url: src.getAttribute("href"), id: src.dataset.bmId };
+  });
+  await sleep(400); // MRBB_DRAG_START が SW に届くのを待つ
+  await sw.evaluate(async (url) => {
+    // ネイティブバーへのドロップで Chrome が複製を作る動きを再現
+    await chrome.bookmarks.create({ parentId: "1", index: 0, title: "native-copy", url });
+  }, dragMove.url);
+  await page.evaluate(() => {
+    const sh = document.getElementById("mrbb-host").shadowRoot;
+    sh.getElementById("mrbb-root").dispatchEvent(new DragEvent("dragend", { bubbles: true, composed: true }));
+  });
+  await sleep(800);
+  const afterMove = await sw.evaluate(async (url) => {
+    const res = await chrome.bookmarks.search({ url });
+    return res.filter((r) => r.url === url).map((r) => r.id);
+  }, dragMove.url);
+  check("ext->native drop becomes move (original removed)",
+    afterMove.length === 1 && afterMove[0] !== dragMove.id,
+    JSON.stringify({ remaining: afterMove, original: dragMove.id }));
+
   // --- everything fits -> bar disappears & page restored ---
   await sw.evaluate(async () => {
     const kids = await chrome.bookmarks.getChildren("1");

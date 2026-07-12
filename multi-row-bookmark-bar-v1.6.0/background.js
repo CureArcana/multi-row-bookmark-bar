@@ -61,7 +61,67 @@
     }
   });
 
+  // 拡張バーからのドラッグ中情報。ネイティブバーにドロップされると Chrome が
+  // 「新規ブックマーク作成」として複製を作るので、それを検知して元を削除し
+  // 「移動」の挙動にする
+  let pendingDrag = null; // { id, url, expires }
+
+  chrome.bookmarks.onCreated.addListener((id, node) => {
+    if (
+      pendingDrag &&
+      Date.now() < pendingDrag.expires &&
+      node.url === pendingDrag.url &&
+      id !== pendingDrag.id
+    ) {
+      const originalId = pendingDrag.id;
+      pendingDrag = null;
+      chrome.bookmarks.remove(originalId).catch(() => {});
+    }
+  });
+
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+    if (msg.type === "MRBB_DRAG_START") {
+      pendingDrag = msg.url
+        ? { id: msg.id, url: msg.url, expires: Date.now() + 60000 }
+        : null;
+      sendResponse({ success: true });
+      return false;
+    }
+
+    if (msg.type === "MRBB_DRAG_END") {
+      // ネイティブバーへのドロップは dragend より先に onCreated が来るが、
+      // 念のため少し猶予を持たせてから破棄する
+      setTimeout(() => { pendingDrag = null; }, 1500);
+      sendResponse({ success: true });
+      return false;
+    }
+
+    if (msg.type === "MRBB_EXTERNAL_DROP") {
+      // ネイティブバー（や他フォルダ・ページ上のリンク）からのドロップ。
+      // 同じ URL のブックマークが既に存在すれば move、無ければ create
+      (async () => {
+        const dest = { parentId: msg.destination.parentId || "1" };
+        if (msg.destination.index !== undefined) dest.index = msg.destination.index;
+        const results = await chrome.bookmarks.search({ url: msg.url }).catch(() => []);
+        const exact = results.filter((r) => r.url === msg.url);
+        const existing =
+          exact.find((r) => r.parentId === "1") || exact[0];
+        if (existing) {
+          await chrome.bookmarks.move(existing.id, dest);
+          sendResponse({ success: true, moved: existing.id });
+        } else {
+          const bm = await chrome.bookmarks.create({
+            parentId: dest.parentId,
+            index: dest.index,
+            title: msg.title || msg.url,
+            url: msg.url,
+          });
+          sendResponse({ success: true, created: bm.id });
+        }
+      })().catch((err) => sendResponse({ success: false, error: String(err) }));
+      return true;
+    }
+
     if (msg.type === "MRBB_GET_BOOKMARKS") {
       // hasOtherBookmarks: 「その他のブックマーク」が非空だとネイティブバー右端に
       // そのボタンが表示され、使用可能幅が狭くなる（overflow 計算に必要）
