@@ -411,6 +411,46 @@ try {
     menuTexts.includes(expectedI18n.sortByName),
     JSON.stringify({ locale: expectedI18n.locale, sample: menuTexts.slice(0, 3) }));
 
+  // --- language setting overrides browser locale ---
+  // このテスト環境は ja ロケール。language="en" にすると英語辞書が優先されるはず
+  await sw.evaluate(async () => {
+    const data = await chrome.storage.sync.get("mrbb-settings");
+    const s = data["mrbb-settings"] || {};
+    s.language = "en";
+    await chrome.storage.sync.set({ "mrbb-settings": s });
+  });
+  await sleep(800);
+  const enMenu = await page.evaluate(() => {
+    const sh = document.getElementById("mrbb-host").shadowRoot;
+    const item = sh.querySelector(".mrbb-item.mrbb-link");
+    item.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, composed: true, clientX: 300, clientY: 60 }));
+    const menu = sh.querySelector(".mrbb-context-menu");
+    const texts = menu ? [...menu.querySelectorAll(".mrbb-context-item")].map(m => m.textContent) : [];
+    if (menu) menu.remove();
+    return texts;
+  });
+  check("language=en overrides ja browser locale",
+    enMenu.includes("Rename") && enMenu.includes("Open in new tab"),
+    JSON.stringify(enMenu.slice(0, 3)));
+  await sw.evaluate(async () => {
+    const data = await chrome.storage.sync.get("mrbb-settings");
+    const s = data["mrbb-settings"] || {};
+    s.language = "auto";
+    await chrome.storage.sync.set({ "mrbb-settings": s });
+  });
+  await sleep(600);
+  const backMenu = await page.evaluate(() => {
+    const sh = document.getElementById("mrbb-host").shadowRoot;
+    const item = sh.querySelector(".mrbb-item.mrbb-link");
+    item.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, composed: true, clientX: 300, clientY: 60 }));
+    const menu = sh.querySelector(".mrbb-context-menu");
+    const texts = menu ? [...menu.querySelectorAll(".mrbb-context-item")].map(m => m.textContent) : [];
+    if (menu) menu.remove();
+    return texts;
+  });
+  check("language=auto returns to browser locale",
+    backMenu.includes(expectedI18n.rename), JSON.stringify(backMenu.slice(0, 3)));
+
   // --- gear settings panel: real mouse clicks work through shadow DOM ---
   const gearRect = await page.evaluate(() => {
     const sh = document.getElementById("mrbb-host").shadowRoot;

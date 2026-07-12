@@ -165,7 +165,7 @@
     "message": "Display"
   },
   "displayBehaviorDesc": {
-    "message": "Auto-hide never alters page layout"
+    "message": "Auto-hide never alters the page. Push may break some sites."
   },
   "autohideOption": {
     "message": "Auto-hide overlay"
@@ -214,5 +214,14 @@
   },
   "newTabTitle": {
     "message": "New Tab"
+  },
+  "pushWarning": {
+    "message": "Note: Push mode may break layout on some sites (fixed headers, 100vh layouts)."
+  },
+  "language": {
+    "message": "Language"
+  },
+  "langAuto": {
+    "message": "Match browser"
   }
 }

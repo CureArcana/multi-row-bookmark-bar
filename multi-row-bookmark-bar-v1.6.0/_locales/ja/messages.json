@@ -165,7 +165,7 @@
     "message": "表示方式"
   },
   "displayBehaviorDesc": {
-    "message": "オートハイドはページのレイアウトを一切変更しません"
+    "message": "オートハイドはページを変更しません。押し下げは一部サイトで表示が崩れる場合があります"
   },
   "autohideOption": {
     "message": "上端ホバーで表示"
@@ -214,5 +214,14 @@
   },
   "newTabTitle": {
     "message": "新しいタブ"
+  },
+  "pushWarning": {
+    "message": "注意: 押し下げモードは一部サイト（固定ヘッダー・100vhレイアウト等）で表示が崩れる場合があります"
+  },
+  "language": {
+    "message": "言語"
+  },
+  "langAuto": {
+    "message": "ブラウザに合わせる"
   }
 }

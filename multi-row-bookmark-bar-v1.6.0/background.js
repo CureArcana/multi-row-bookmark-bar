@@ -21,6 +21,7 @@
     hideOnClick: true,
     hideOnOutsideClick: true,
     ntpMode: "custom",
+    language: "auto",
   };
 
   function mapBookmark(node) {

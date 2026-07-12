@@ -26,7 +26,8 @@
     autohideDelayMs: 400,     // エリアから外れてから隠すまでの時間
     hideOnClick: true,        // バー内のブックマークを開いたら即座に隠す
     hideOnOutsideClick: true, // バーの外をクリックしたら即座に隠す
-    ntpMode: "custom"         // 新しいタブ: "custom"=多段バー付きページ / "default"=Chrome標準へ転送
+    ntpMode: "custom",        // 新しいタブ: "custom"=多段バー付きページ / "default"=Chrome標準へ転送
+    language: "auto"          // UI言語: "auto"=ブラウザに合わせる / "en" / "ja"
   };
 
   // Chrome ネイティブバーの寸法モデル
@@ -154,10 +155,23 @@
   var currentZoom = 1;
   function fx(v) { return (v * currentZoom) + "px"; }
 
-  // i18n: _locales/{en,ja}/messages.json から Chrome の UI 言語で取得
+  // i18n: 設定 language が "auto" 以外なら該当ロケールの辞書を実行時ロードして
+  // 優先使用（chrome.i18n はブラウザ UI 言語固定で切替できないため）
+  var i18nDict = null;
+  var i18nLoadedLang = "auto";
   function t(key) {
+    if (i18nDict && i18nDict[key] && i18nDict[key].message) return i18nDict[key].message;
     try { var m = chrome.i18n.getMessage(key); if (m) return m; } catch (e) { /* ignore */ }
     return key;
+  }
+  async function loadI18n(lang) {
+    if (!lang || lang === "auto") { i18nDict = null; i18nLoadedLang = "auto"; return; }
+    if (i18nLoadedLang === lang && i18nDict) return;
+    try {
+      var resp = await fetch(chrome.runtime.getURL("_locales/" + lang + "/messages.json"));
+      i18nDict = await resp.json();
+      i18nLoadedLang = lang;
+    } catch (e) { i18nDict = null; i18nLoadedLang = "auto"; }
   }
 
   // ===== Native Bar Visibility Detection =====
@@ -871,7 +885,7 @@
       '<div class="mrbb-settings-row"><span>' + t("maxRows") + '</span><input type="number" id="mrbb-mr-inp" value="' + settings.maxRows + '" min="0" max="20" style="width:48px;text-align:center;border:1px solid #dadce0;border-radius:3px;padding:2px 4px;font-size:12px;"></div>' +
       '<div class="mrbb-settings-row"><span>' + t("folderOpen") + '</span><select id="mrbb-fo-sel" style="border:1px solid #dadce0;border-radius:3px;padding:2px 4px;font-size:12px;"><option value="hover"' + (settings.folderOpenMode === "hover" ? " selected" : "") + '>' + t("hover") + '</option><option value="click"' + (settings.folderOpenMode === "click" ? " selected" : "") + '>' + t("click") + '</option></select></div>' +
       '<div class="mrbb-settings-row"><span>' + t("barMode") + '</span><select id="mrbb-bm-sel" style="border:1px solid #dadce0;border-radius:3px;padding:2px 4px;font-size:12px;"><option value="overflow"' + (settings.barMode === "overflow" ? " selected" : "") + '>' + t("overflowOnly") + '</option><option value="independent"' + (settings.barMode === "independent" ? " selected" : "") + '>' + t("allBookmarks") + '</option></select></div>' +
-      '<div class="mrbb-settings-row"><span>' + t("displayBehavior") + '</span><select id="mrbb-db-sel" style="border:1px solid #dadce0;border-radius:3px;padding:2px 4px;font-size:12px;"><option value="autohide"' + (settings.displayBehavior !== "push" ? " selected" : "") + '>' + t("autohideOption") + '</option><option value="push"' + (settings.displayBehavior === "push" ? " selected" : "") + '>' + t("pushOption") + '</option></select></div>' +
+      '<div class="mrbb-settings-row"><span>' + t("displayBehavior") + '</span><select id="mrbb-db-sel" title="' + t("pushWarning") + '" style="border:1px solid #dadce0;border-radius:3px;padding:2px 4px;font-size:12px;"><option value="autohide"' + (settings.displayBehavior !== "push" ? " selected" : "") + '>' + t("autohideOption") + '</option><option value="push"' + (settings.displayBehavior === "push" ? " selected" : "") + ' title="' + t("pushWarning") + '">' + t("pushOption") + '</option></select></div>' +
       '<div class="mrbb-settings-row"><span>' + t("boundaryAdjust") + '</span><div class="mrbb-settings-fontsize"><button data-action="bo-dec" title="' + t("boundaryEarlier") + '">◀</button><span id="mrbb-bo-val">' + (settings.boundaryOffsetPx || 0) + 'px</span><button data-action="bo-inc" title="' + t("boundaryLater") + '">▶</button></div></div>' +
       '<div class="mrbb-settings-row"><span>' + t("hoverCloseDelay") + '</span><div class="mrbb-settings-fontsize"><button data-action="hc-dec">-</button><span id="mrbb-hc-val">' + (settings.hoverCloseMs || 400) + 'ms</span><button data-action="hc-inc">+</button></div></div>' +
       '<div class="mrbb-settings-row"><span>' + t("revealEdge") + '</span><div class="mrbb-settings-fontsize"><button data-action="re-dec">-</button><span id="mrbb-re-val">' + (settings.revealEdgePx || 2) + 'px</span><button data-action="re-inc">+</button></div></div>' +
@@ -1332,7 +1346,7 @@
 
   function applySettings(newSettings) {
     settings = Object.assign({}, newSettings);
-    render();
+    loadI18n(settings.language).then(render);
   }
 
   async function loadSettings() {

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "__MSG_extName__",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "__MSG_extDesc__",
   "default_locale": "en",
   "permissions": [
@@ -54,7 +54,9 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "content.css"
+        "content.css",
+        "_locales/en/messages.json",
+        "_locales/ja/messages.json"
       ],
       "matches": [
         "<all_urls>"
