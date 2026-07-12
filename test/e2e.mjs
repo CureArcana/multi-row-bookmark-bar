@@ -550,6 +550,37 @@ try {
     afterMove.length === 1 && afterMove[0] !== dragMove.id,
     JSON.stringify({ remaining: afterMove, original: dragMove.id }));
 
+  // --- calibration page: loads, i18n applied, strip analysis works ---
+  const extId = swTarget.url().match(/chrome-extension:\/\/([a-z]+)\//)[1];
+  const calPage = await browser.newPage();
+  await calPage.goto(`chrome-extension://${extId}/calibrate.html`, { waitUntil: "load" });
+  const calCheck = await calPage.evaluate(() => {
+    // 合成ストリップ: 白背景、アイテム2つ(30-80, 100-160)、シェブロン(200-210)
+    const width = 300, height = 5;
+    const data = new Uint8ClampedArray(width * height * 4).fill(255);
+    const paint = (x0, x1) => {
+      for (let y = 1; y < 4; y++) for (let x = x0; x <= x1; x++) {
+        const i = (y * width + x) * 4;
+        data[i] = data[i + 1] = data[i + 2] = 40;
+      }
+    };
+    paint(30, 80); paint(100, 160); paint(200, 210);
+    const r = window.__mrbbFindLastItemRight({ data, width, height });
+    return {
+      title: document.getElementById("c-title").textContent,
+      btnText: document.getElementById("start").textContent,
+      clusters: r.clusters.length,
+      lastItemRight: r.lastItemRight,
+      chevronLeft: r.chevronLeft,
+    };
+  });
+  check("calibration page loads with i18n", calCheck.title.length > 3 && calCheck.btnText.length > 3,
+    JSON.stringify({ title: calCheck.title, btn: calCheck.btnText }));
+  check("strip analysis finds last item before chevron",
+    calCheck.clusters === 3 && calCheck.lastItemRight === 160 && calCheck.chevronLeft === 200,
+    JSON.stringify(calCheck));
+  await calPage.close();
+
   // --- everything fits -> bar disappears & page restored ---
   await sw.evaluate(async () => {
     const kids = await chrome.bookmarks.getChildren("1");

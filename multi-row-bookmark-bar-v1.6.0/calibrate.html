@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Multi-Row Bookmark Bar — Calibration</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", "Yu Gothic UI", Meiryo, system-ui, sans-serif;
+      font-size: 14px; color: #1f1f1f; background: #f8fafd;
+      display: flex; justify-content: center; padding: 48px 16px;
+    }
+    .card {
+      background: #fff; border: 1px solid #e1e3e1; border-radius: 12px;
+      padding: 28px 32px; max-width: 560px; width: 100%;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    h1 { font-size: 18px; margin-bottom: 12px; }
+    p { line-height: 1.7; color: #474747; margin-bottom: 10px; }
+    ol { margin: 0 0 16px 22px; line-height: 1.9; color: #474747; }
+    button {
+      font-size: 14px; padding: 8px 20px; border-radius: 8px; cursor: pointer;
+      border: 1px solid #dadce0; background: #fff; color: #1f1f1f;
+    }
+    button.primary { background: #0b57d0; border-color: #0b57d0; color: #fff; }
+    button.primary:hover { background: #0a4cb8; }
+    #status {
+      margin-top: 16px; padding: 12px; border-radius: 8px;
+      background: #f0f4f9; color: #1f1f1f; white-space: pre-wrap; display: none;
+    }
+    #status.ok { background: #e6f4ea; }
+    #status.err { background: #fce8e6; }
+    canvas { display: none; }
+    @media (prefers-color-scheme: dark) {
+      body { background: #282828; color: #e3e3e3; }
+      .card { background: #1f1f1f; border-color: #444746; }
+      p, ol { color: #c7c7c7; }
+      h1 { color: #e3e3e3; }
+      button { background: #1f1f1f; border-color: #444746; color: #e3e3e3; }
+      button.primary { background: #a8c7fa; border-color: #a8c7fa; color: #062e6f; }
+      #status { background: #37393b; color: #e3e3e3; }
+      #status.ok { background: #1e3a29; }
+      #status.err { background: #4a2420; }
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1 id="c-title">Auto-calibration</h1>
+    <p id="c-intro">Reads the actual bookmarks bar via a one-time screen capture and aligns the extension bar boundary exactly.</p>
+    <ol>
+      <li id="c-step1">Click the button below.</li>
+      <li id="c-step2">In the picker, choose <b>this Chrome window</b> and press Share.</li>
+      <li id="c-step3">The capture stops automatically after a single frame.</li>
+    </ol>
+    <button id="start" class="primary">Start calibration</button>
+    <div id="status"></div>
+  </div>
+  <script src="calibrate.js"></script>
+</body>
+</html>

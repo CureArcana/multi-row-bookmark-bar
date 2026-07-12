@@ -77,7 +77,8 @@
   function getTextWidth(text, fontSize, maxWidth) {
     if (!canvasEl) canvasEl = document.createElement("canvas");
     var ctx = canvasEl.getContext("2d");
-    ctx.font = fontSize + 'px "Segoe UI", system-ui, -apple-system, sans-serif';
+    // Yu Gothic UI: Chrome UI が日本語で使うフォールバック。ネイティブバーの実描画と揃える
+    ctx.font = fontSize + 'px "Segoe UI", "Yu Gothic UI", Meiryo, system-ui, -apple-system, sans-serif';
     return Math.min(ctx.measureText(text).width, maxWidth || NATIVE.textMaxWidth);
   }
 

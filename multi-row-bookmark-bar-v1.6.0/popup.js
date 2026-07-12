@@ -63,5 +63,8 @@
       el.addEventListener("change", save);
       el.addEventListener("input", save);
     });
+    document.getElementById("openCalibrate").addEventListener("click", () => {
+      chrome.tabs.create({ url: chrome.runtime.getURL("calibrate.html") });
+    });
   });
 })();
