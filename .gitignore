@@ -30,3 +30,4 @@ vite.config.ts
 tsconfig.json
 scripts/
 .claude/
+store-assets/*.zip

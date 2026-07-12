@@ -45,8 +45,10 @@
     chevron: 33       // >> オーバーフローシェブロン + 右余白
   };
 
+  // ブラウザ内蔵の favicon キャッシュ (_favicon API) を使う。
+  // 外部サービスへの通信が一切発生せず、オフラインでも動作する
   var getFaviconUrl = function (url) {
-    try { var u = new URL(url); return "https://www.google.com/s2/favicons?domain=" + encodeURIComponent(u.hostname) + "&sz=32"; }
+    try { return chrome.runtime.getURL("/_favicon/?pageUrl=" + encodeURIComponent(url) + "&size=32"); }
     catch (e) { return ""; }
   };
 

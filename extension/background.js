@@ -260,9 +260,11 @@
   });
 
   function notifyAllTabs() {
+    // host_permissions 無しでは tab.url が見えないため URL では絞らず全タブへ送る。
+    // content script がいないタブ（chrome:// 等）はエラーになるので握りつぶす
     chrome.tabs.query({}, (tabs) => {
       for (const tab of tabs) {
-        if (tab.id && tab.url && !tab.url.startsWith("chrome://")) {
+        if (tab.id !== undefined) {
           chrome.tabs
             .sendMessage(tab.id, { type: "MRBB_REFRESH" })
             .catch(() => {});
