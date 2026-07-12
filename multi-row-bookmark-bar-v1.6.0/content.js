@@ -98,15 +98,18 @@
   // ===== Chrome Zoom Detection =====
   function getChromeZoom() {
     var dpr = window.devicePixelRatio;
-    if (window.outerWidth >= window.innerWidth) {
+    // outerWidth はズームの影響を受けない（ウィンドウ幅）ので outer/inner ≈ ズーム倍率。
+    // 縮小(<100%)でも成り立つため outer>=inner の条件は付けない
+    if (window.outerWidth > 0 && window.innerWidth > 0) {
       var rawZoom = window.outerWidth / window.innerWidth;
       var levels = [0.25,0.33,0.5,0.67,0.75,0.8,0.9,1.0,1.1,1.25,1.5,1.75,2.0,2.5,3.0];
-      var best = 1.0, minDiff = 0.05;
+      var best = -1, minDiff = 0.05;
       for (var i = 0; i < levels.length; i++) {
         var d = Math.abs(rawZoom - levels[i]);
         if (d < minDiff) { minDiff = d; best = levels[i]; }
       }
-      return best;
+      if (best > 0) return best;
+      // どのズームレベルにも一致しない場合は DPR 方式にフォールバック
     }
     var physW = window.innerWidth * dpr;
     var ratio = physW / screen.width;
@@ -120,6 +123,12 @@
     if (zoom < 0.5 || zoom > 3.0) return 1.0;
     return Math.abs(zoom - 1.0) < 0.03 ? 1.0 : zoom;
   }
+
+  // host には zoom: 1/currentZoom がかかっているため、shadow 内で position:fixed
+  // する要素の座標はページ座標（clientX/getBoundingClientRect）に currentZoom を
+  // 掛けて指定しないと実描画位置が 1/zoom 倍にズレる
+  var currentZoom = 1;
+  function fx(v) { return (v * currentZoom) + "px"; }
 
   // ===== Layout Calculation =====
   // ネイティブバー上のアイテム幅（Chrome の実描画を模倣）
@@ -353,10 +362,10 @@
       var ind = getDropIndicator();
       var rowRect = targetRow.getBoundingClientRect();
       ind.style.position = "fixed";
-      ind.style.top = (rowRect.top + 2) + "px";
-      ind.style.left = (insertX - 1) + "px";
-      ind.style.height = (rowRect.height - 4) + "px";
-      ind.style.width = "2px";
+      ind.style.top = fx(rowRect.top + 2);
+      ind.style.left = fx(insertX - 1);
+      ind.style.height = fx(rowRect.height - 4);
+      ind.style.width = fx(2);
       ind.style.zIndex = "2147483647";
       if (!ind.parentElement && shadowRoot) shadowRoot.appendChild(ind);
 
@@ -401,10 +410,10 @@
       if (!before && rows.length > 0) insertY = rows[rows.length - 1].getBoundingClientRect().bottom;
       var ddr = dropdown.getBoundingClientRect();
       ind.style.position = "fixed";
-      ind.style.top = (insertY - 1) + "px";
-      ind.style.left = (ddr.left + 8) + "px";
-      ind.style.width = (ddr.width - 16) + "px";
-      ind.style.height = "2px";
+      ind.style.top = fx(insertY - 1);
+      ind.style.left = fx(ddr.left + 8);
+      ind.style.width = fx(ddr.width - 16);
+      ind.style.height = fx(2);
       ind.style.zIndex = "2147483647";
       if (!ind.parentElement && shadowRoot) shadowRoot.appendChild(ind);
       if (before) {
@@ -487,8 +496,8 @@
     var left = x, top = y;
     if (left + rect.width > window.innerWidth) left = window.innerWidth - rect.width - 4;
     if (top + rect.height > window.innerHeight) top = window.innerHeight - rect.height - 4;
-    menu.style.left = left + "px";
-    menu.style.top = top + "px";
+    menu.style.left = fx(left);
+    menu.style.top = fx(top);
     activeContextMenu = menu;
     menu.addEventListener("contextmenu", function (e) { e.preventDefault(); e.stopPropagation(); });
   }
@@ -592,8 +601,8 @@
     setupDropdownDragDrop(dd, folder.id);
     var ar = anchor.getBoundingClientRect();
     dd.style.position = "fixed";
-    dd.style.top = (ar.bottom - 4) + "px";
-    dd.style.left = ar.left + "px";
+    dd.style.top = fx(ar.bottom - 4);
+    dd.style.left = fx(ar.left);
     dd.style.zIndex = "2147483647";
     dd.style.paddingTop = "4px";
     if (shadowRoot) shadowRoot.appendChild(dd);
@@ -601,8 +610,8 @@
     activeDropdownAnchor = anchor;
 
     var ddr = dd.getBoundingClientRect();
-    if (ddr.right > window.innerWidth) dd.style.left = (window.innerWidth - ddr.width - 4) + "px";
-    if (ddr.bottom > window.innerHeight) dd.style.top = Math.max(4, window.innerHeight - ddr.height - 4) + "px";
+    if (ddr.right > window.innerWidth) dd.style.left = fx(window.innerWidth - ddr.width - 4);
+    if (ddr.bottom > window.innerHeight) dd.style.top = fx(Math.max(4, window.innerHeight - ddr.height - 4));
 
     if (mode === "hover") {
       dropdownCleanup = setupHoverTracking(anchor, dd, 400);
@@ -648,14 +657,14 @@
         setupDropdownDragDrop(sub, item.id);
         var er = el.getBoundingClientRect();
         sub.style.position = "fixed";
-        sub.style.top = er.top + "px";
-        sub.style.left = (er.right - 4) + "px";
+        sub.style.top = fx(er.top);
+        sub.style.left = fx(er.right - 4);
         sub.style.paddingLeft = "4px";
         sub.style.zIndex = "2147483647";
         if (shadowRoot) shadowRoot.appendChild(sub);
         var sr = sub.getBoundingClientRect();
-        if (sr.right > window.innerWidth) { sub.style.left = (er.left - sr.width + 4) + "px"; sub.style.paddingLeft = "0"; sub.style.paddingRight = "4px"; }
-        if (sr.bottom > window.innerHeight) sub.style.top = Math.max(4, window.innerHeight - sr.height - 4) + "px";
+        if (sr.right > window.innerWidth) { sub.style.left = fx(er.left - sr.width + 4); sub.style.paddingLeft = "0"; sub.style.paddingRight = "4px"; }
+        if (sr.bottom > window.innerHeight) sub.style.top = fx(Math.max(4, window.innerHeight - sr.height - 4));
 
         var subTimer = null;
         var onSubMove = function (ev) {
@@ -727,8 +736,8 @@
       '<div class="mrbb-settings-row"><span>開始位置調整</span><div class="mrbb-settings-fontsize"><button data-action="bo-dec" title="1つ手前から表示">◀</button><span id="mrbb-bo-val">' + (settings.boundaryOffset || 0) + '</span><button data-action="bo-inc" title="1つ後ろから表示">▶</button></div></div>';
 
     var gr = gearBtn.getBoundingClientRect();
-    panel.style.top = (gr.bottom + 4) + "px";
-    panel.style.left = gr.left + "px";
+    panel.style.top = fx(gr.bottom + 4);
+    panel.style.left = fx(gr.left);
     if (shadowRoot) shadowRoot.appendChild(panel);
 
     var fsValEl = panel.querySelector("#mrbb-fs-val");
@@ -814,8 +823,8 @@
       }
       var ir = inputEl.getBoundingClientRect();
       resultPanel.style.position = "fixed";
-      resultPanel.style.top = (ir.bottom + 4) + "px";
-      resultPanel.style.left = Math.max(4, ir.right - 300) + "px";
+      resultPanel.style.top = fx(ir.bottom + 4);
+      resultPanel.style.left = fx(Math.max(4, ir.right - 300));
       resultPanel.style.zIndex = "2147483647";
       if (shadowRoot) shadowRoot.appendChild(resultPanel);
     }
@@ -929,6 +938,7 @@
     if (bookmarks.length === 0) { removeBar(); return; }
     var fs = settings.fontSize || 12;
     var zoom = getChromeZoom();
+    currentZoom = zoom;
     var ww = Math.round(window.innerWidth * zoom);
 
     var overflow = settings.barMode !== "independent";

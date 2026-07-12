@@ -177,6 +177,29 @@ try {
   check("fixed header re-adjusted on resize", Math.abs(narrow.headerTop - narrow.hostH) < 1,
     `headerTop=${narrow.headerTop} bar=${narrow.hostH}`);
 
+  // --- D&D indicator aligns with item boundary under cursor ---
+  const dndCheck = await page.evaluate(() => {
+    const sh = document.getElementById("mrbb-host").shadowRoot;
+    const root = sh.getElementById("mrbb-root");
+    const items = [...sh.querySelectorAll(".mrbb-item:not(.mrbb-folder)")];
+    if (items.length < 3) return { error: "not enough items" };
+    const src = items[0], target = items[2];
+    const dt = new DataTransfer();
+    const tr = target.getBoundingClientRect();
+    src.dispatchEvent(new DragEvent("dragstart", { bubbles: true, composed: true, dataTransfer: dt }));
+    // カーソルを target の左40%位置に置く → | は target の左端に出るはず
+    root.dispatchEvent(new DragEvent("dragover", {
+      bubbles: true, composed: true, dataTransfer: dt,
+      clientX: tr.left + tr.width * 0.4, clientY: tr.top + tr.height / 2,
+    }));
+    const ind = sh.querySelector(".mrbb-drop-indicator");
+    const ir = ind ? ind.getBoundingClientRect() : null;
+    root.dispatchEvent(new DragEvent("dragend", { bubbles: true, composed: true }));
+    return ir ? { indLeft: ir.left, expected: tr.left - 1, diff: Math.abs(ir.left - (tr.left - 1)) } : { error: "no indicator" };
+  });
+  check("D&D indicator at item boundary (no offset)", dndCheck.diff !== undefined && dndCheck.diff < 2,
+    JSON.stringify(dndCheck));
+
   // --- boundary offset: -2 shows 2 more items in ext bar ---
   await page.setViewport({ width: 1280, height: 900 });
   await sleep(500);
