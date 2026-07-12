@@ -198,6 +198,15 @@
   font-size: 13px; color: var(--mrbb-menu-text); z-index: 2147483647;
 }
 .mrbb-settings-title { font-weight: 600; font-size: 14px; margin-bottom: 10px; }
+.mrbb-info {
+  color: #9aa0a6; cursor: default; font-size: 12px;
+  user-select: none; -webkit-user-select: none;
+}
+.mrbb-info:hover { color: var(--mrbb-accent); }
+.mrbb-info-text {
+  font-size: 11px; color: #5f6368; line-height: 1.5;
+  padding: 0 0 6px; max-width: 250px;
+}
 .mrbb-settings-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; gap: 12px; }
 .mrbb-settings-row span { color: var(--mrbb-menu-text); font-size: 13px; }
 .mrbb-settings-fontsize { display: flex; align-items: center; gap: 6px; }

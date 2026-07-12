@@ -223,5 +223,32 @@
   },
   "langAuto": {
     "message": "ブラウザに合わせる"
+  },
+  "fontSizeInfo": {
+    "message": "拡張バーの文字サイズです (8 - 20px)。"
+  },
+  "rowHeightInfo": {
+    "message": "拡張バーの1行の高さです (20 - 60px)。"
+  },
+  "maxRowsInfo": {
+    "message": "拡張バーの最大行数。0 で無制限。"
+  },
+  "folderOpenInfo": {
+    "message": "フォルダをホバーで開くかクリックで開くか。"
+  },
+  "barModeInfo": {
+    "message": "「隠れた分のみ」は標準バーに入り切らない分だけを続きとして表示。「すべてのブックマーク」は全部を拡張バーに表示します。"
+  },
+  "boundaryInfo": {
+    "message": "標準バーに何個表示されているかの推定を補正します。拡張バーの先頭が重複/欠落している時に◀▶で合わせてください。px保存なので並べ替えてもズレません。"
+  },
+  "revealDelayInfo": {
+    "message": "上端に触れてから表示するまでの待ち時間。誤って出るのを防ぎたい時に増やします (0 - 1000ms)。"
+  },
+  "hideOnClickInfo": {
+    "message": "バー内のブックマークを開いた瞬間にバーを格納します。"
+  },
+  "hideOnOutsideClickInfo": {
+    "message": "バーの外側をクリックした瞬間にバーを格納します。"
   }
 }

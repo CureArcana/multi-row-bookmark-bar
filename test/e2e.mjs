@@ -464,6 +464,31 @@ try {
   );
   check("gear click opens settings panel", panelOpen);
 
+  // --- gear panel: push warning + info icons ---
+  const panelInfo = await page.evaluate(() => {
+    const sh = document.getElementById("mrbb-host").shadowRoot;
+    const panel = sh.querySelector(".mrbb-settings-panel");
+    const warn = panel.querySelector("#mrbb-push-warn");
+    const infos = panel.querySelectorAll(".mrbb-info");
+    // ⓘ をクリック → 説明文が展開される
+    infos[0].dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    const opened = !!panel.querySelector(".mrbb-info-text[data-for]");
+    const openedText = panel.querySelector(".mrbb-info-text[data-for]")?.textContent ?? "";
+    // もう一度クリック → 閉じる
+    infos[0].dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    const closed = !panel.querySelector(".mrbb-info-text[data-for]");
+    return {
+      warnVisible: warn && warn.style.display !== "none" && warn.textContent.length > 5,
+      infoCount: infos.length,
+      opened, openedText: openedText.slice(0, 20), closed,
+    };
+  });
+  check("gear panel shows push warning (push mode active)",
+    panelInfo.warnVisible, JSON.stringify({ warnVisible: panelInfo.warnVisible }));
+  check("info icons toggle explanations",
+    panelInfo.infoCount >= 12 && panelInfo.opened && panelInfo.openedText.length > 3 && panelInfo.closed,
+    JSON.stringify(panelInfo));
+
   const fsBtnRect = await page.evaluate(() => {
     const sh = document.getElementById("mrbb-host").shadowRoot;
     const b = sh.querySelector('[data-action="fs-inc"]');
