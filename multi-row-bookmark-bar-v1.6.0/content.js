@@ -10,7 +10,8 @@
     enabled: true, maxRows: 0, displayMode: "both",
     folderOpenMode: "hover", showCondition: "always",
     fontSize: 12, barHeight: 36,
-    barMode: "overflow" // "overflow": ネイティブバーの続きから / "independent": 全ブックマークを描画
+    barMode: "overflow", // "overflow": ネイティブバーの続きから / "independent": 全ブックマークを描画
+    boundaryOffset: 0   // ネイティブバー収容数の手動補正（-5〜+5 アイテム）
   };
 
   // Chrome ネイティブバーの寸法モデル
@@ -44,6 +45,7 @@
   var canvasEl = null;
   var barHeightPx = 0;
   var hasOtherBookmarks = false;
+  var tabGroupTitles = [];
   var originalBodyMarginTop = null;
   var fixedAdjusted = [];   // [{el, original}]
   var fixedObserver = null;
@@ -79,6 +81,18 @@
     var label = lang.indexOf("ja") === 0 ? "その他のブックマーク" : "All Bookmarks";
     return NATIVE.itemPad * 2 + NATIVE.iconSize + NATIVE.iconTextGap + NATIVE.itemSpacing +
       getTextWidth(label, NATIVE.fontSize) + 8; // +8: ボタン手前のセパレータ余白
+  }
+
+  // 保存済みタブグループのチップがネイティブバー左側に表示され、幅を消費する
+  function tabGroupChipsWidth() {
+    if (!tabGroupTitles.length) return 0;
+    var w = 0;
+    for (var i = 0; i < tabGroupTitles.length; i++) {
+      // チップ = テキスト + 左右パディング + チップ間隔（タイトル空でも色ドットが出る）
+      var t = tabGroupTitles[i];
+      w += (t ? getTextWidth(t, NATIVE.fontSize) : 12) + 32;
+    }
+    return w + 8; // チップ群とブックマークの間のセパレータ余白
   }
 
   // ===== Chrome Zoom Detection =====
@@ -133,35 +147,45 @@
     var gearW = 24, searchW = 24;
     var extAvail = windowWidth - 16; // BAR_MARGIN_X * 2
 
-    var nativeFull = windowWidth - NATIVE.leftMargin - NATIVE.rightMargin - (hasOtherBookmarks ? otherBookmarksLabelWidth() : 0);
+    // ネイティブバーの幅を消費する要素をすべて差し引く
+    var reserved = NATIVE.leftMargin + NATIVE.rightMargin +
+      tabGroupChipsWidth() +
+      (hasOtherBookmarks ? otherBookmarksLabelWidth() : 0);
+    var nativeFull = windowWidth - reserved;
     var nativeWidths = bookmarks.map(calcNativeItemWidth);
     var total = nativeWidths.reduce(function (a, b) { return a + b; }, 0);
-    if (total <= nativeFull) return []; // 全部ネイティブバーに収まる → 拡張バー不要
 
-    // オーバーフローあり → シェブロン分を差し引いた幅で row 0 の収容数を決める
-    var nativeAvail = nativeFull + NATIVE.rightMargin - NATIVE.chevron;
-    var result = [];
-    var currentRow = 0, rowUsed = 0;
-    for (var i = 0; i < bookmarks.length; i++) {
-      var bm = bookmarks[i];
-      if (currentRow === 0) {
-        var nw = nativeWidths[i];
-        if (rowUsed + nw > nativeAvail && rowUsed > 0) {
-          currentRow = 1; rowUsed = 0;
-        } else {
-          result.push({ bookmark: bm, width: nw, row: 0 });
-          rowUsed += nw;
-          continue;
-        }
+    // row 0（ネイティブバー）の収容数 k を決める
+    var k;
+    if (total <= nativeFull) {
+      k = bookmarks.length; // 全部収まる（シェブロン非表示）
+    } else {
+      var nativeAvail = nativeFull + NATIVE.rightMargin - NATIVE.chevron;
+      k = 0;
+      var used = 0;
+      while (k < bookmarks.length && (used === 0 || used + nativeWidths[k] <= nativeAvail)) {
+        used += nativeWidths[k];
+        k++;
       }
-      var itemW = calcItemWidth(bm, sett.displayMode, fs);
+    }
+    // 手動補正（環境差: Chrome UIフォント設定・アプリショートカット・未検出のチップ等）
+    k = Math.max(0, Math.min(bookmarks.length, k + (sett.boundaryOffset || 0)));
+    if (k >= bookmarks.length) return []; // オーバーフロー無し → 拡張バー不要
+
+    var result = [];
+    for (var i = 0; i < k; i++) {
+      result.push({ bookmark: bookmarks[i], width: nativeWidths[i], row: 0 });
+    }
+    var currentRow = 1, rowUsed = 0;
+    for (var j = k; j < bookmarks.length; j++) {
+      var itemW = calcItemWidth(bookmarks[j], sett.displayMode, fs);
       var effective = currentRow === 1 ? extAvail - gearW - searchW : extAvail;
       if (rowUsed + itemW > effective && rowUsed > 0) {
         currentRow++;
         rowUsed = 0;
         if (sett.maxRows > 0 && currentRow > sett.maxRows) break;
       }
-      result.push({ bookmark: bm, width: itemW, row: currentRow });
+      result.push({ bookmark: bookmarks[j], width: itemW, row: currentRow });
       rowUsed += itemW;
     }
     return result;
@@ -699,7 +723,8 @@
       '<div class="mrbb-settings-row"><span>Row height</span><div class="mrbb-settings-fontsize"><button data-action="bh-dec">-</button><span id="mrbb-bh-val">' + bh + 'px</span><button data-action="bh-inc">+</button></div></div>' +
       '<div class="mrbb-settings-row"><span>Max rows (0=unlimited)</span><input type="number" id="mrbb-mr-inp" value="' + settings.maxRows + '" min="0" max="20" style="width:48px;text-align:center;border:1px solid #dadce0;border-radius:3px;padding:2px 4px;font-size:12px;"></div>' +
       '<div class="mrbb-settings-row"><span>Folder open</span><select id="mrbb-fo-sel" style="border:1px solid #dadce0;border-radius:3px;padding:2px 4px;font-size:12px;"><option value="hover"' + (settings.folderOpenMode === "hover" ? " selected" : "") + '>Hover</option><option value="click"' + (settings.folderOpenMode === "click" ? " selected" : "") + '>Click</option></select></div>' +
-      '<div class="mrbb-settings-row"><span>Bar mode</span><select id="mrbb-bm-sel" style="border:1px solid #dadce0;border-radius:3px;padding:2px 4px;font-size:12px;"><option value="overflow"' + (settings.barMode === "overflow" ? " selected" : "") + '>Overflow only</option><option value="independent"' + (settings.barMode === "independent" ? " selected" : "") + '>All bookmarks</option></select></div>';
+      '<div class="mrbb-settings-row"><span>Bar mode</span><select id="mrbb-bm-sel" style="border:1px solid #dadce0;border-radius:3px;padding:2px 4px;font-size:12px;"><option value="overflow"' + (settings.barMode === "overflow" ? " selected" : "") + '>Overflow only</option><option value="independent"' + (settings.barMode === "independent" ? " selected" : "") + '>All bookmarks</option></select></div>' +
+      '<div class="mrbb-settings-row"><span>開始位置調整</span><div class="mrbb-settings-fontsize"><button data-action="bo-dec" title="1つ手前から表示">◀</button><span id="mrbb-bo-val">' + (settings.boundaryOffset || 0) + '</span><button data-action="bo-inc" title="1つ後ろから表示">▶</button></div></div>';
 
     var gr = gearBtn.getBoundingClientRect();
     panel.style.top = (gr.bottom + 4) + "px";
@@ -719,6 +744,13 @@
     });
     panel.querySelector('[data-action="bh-inc"]').addEventListener("click", function () {
       var v = Math.min(60, (settings.barHeight || 36) + 2); settings.barHeight = v; saveSettings(); if (bhValEl) bhValEl.textContent = v + "px";
+    });
+    var boValEl = panel.querySelector("#mrbb-bo-val");
+    panel.querySelector('[data-action="bo-dec"]').addEventListener("click", function () {
+      var v = Math.max(-5, (settings.boundaryOffset || 0) - 1); settings.boundaryOffset = v; saveSettings(); if (boValEl) boValEl.textContent = v;
+    });
+    panel.querySelector('[data-action="bo-inc"]').addEventListener("click", function () {
+      var v = Math.min(5, (settings.boundaryOffset || 0) + 1); settings.boundaryOffset = v; saveSettings(); if (boValEl) boValEl.textContent = v;
     });
     panel.querySelector("#mrbb-mr-inp").addEventListener("change", function (e) { settings.maxRows = parseInt(e.target.value, 10) || 0; saveSettings(); });
     panel.querySelector("#mrbb-fo-sel").addEventListener("change", function (e) { settings.folderOpenMode = e.target.value; saveSettings(); });
@@ -852,6 +884,7 @@
       chrome.runtime.sendMessage({ type: "MRBB_GET_BOOKMARKS" }, function (resp) {
         if (chrome.runtime.lastError || !resp) { resolve([]); return; }
         hasOtherBookmarks = !!resp.hasOtherBookmarks;
+        tabGroupTitles = resp.tabGroupTitles || [];
         resolve(resp.bookmarks || []);
       });
     });

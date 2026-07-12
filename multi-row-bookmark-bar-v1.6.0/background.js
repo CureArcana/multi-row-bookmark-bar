@@ -11,6 +11,7 @@
     fontSize: 12,
     barHeight: 36,
     barMode: "overflow",
+    boundaryOffset: 0,
   };
 
   function mapBookmark(node) {
@@ -64,12 +65,24 @@
     if (msg.type === "MRBB_GET_BOOKMARKS") {
       // hasOtherBookmarks: 「その他のブックマーク」が非空だとネイティブバー右端に
       // そのボタンが表示され、使用可能幅が狭くなる（overflow 計算に必要）
+      // tabGroupTitles: 保存済みタブグループのチップはネイティブバー左側の幅を
+      // 消費するため、開いているグループのタイトルを返して content 側で幅を見積もる
+      const windowId = sender.tab ? sender.tab.windowId : undefined;
+      const tabGroupsPromise =
+        chrome.tabGroups && windowId !== undefined
+          ? chrome.tabGroups.query({ windowId }).catch(() => [])
+          : Promise.resolve([]);
       Promise.all([
         fetchAllBookmarks(),
         chrome.bookmarks.getChildren("2").catch(() => []),
+        tabGroupsPromise,
       ])
-        .then(([bookmarks, others]) =>
-          sendResponse({ bookmarks, hasOtherBookmarks: others.length > 0 })
+        .then(([bookmarks, others, groups]) =>
+          sendResponse({
+            bookmarks,
+            hasOtherBookmarks: others.length > 0,
+            tabGroupTitles: groups.map((g) => g.title || ""),
+          })
         )
         .catch((err) => sendResponse({ bookmarks: [], error: String(err) }));
       return true;

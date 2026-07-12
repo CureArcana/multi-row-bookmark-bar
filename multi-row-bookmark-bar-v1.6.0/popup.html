@@ -176,6 +176,16 @@
   <div class="section">
     <label>
       <div>
+        <div class="label-text">Boundary offset</div>
+        <div class="label-desc">Shift start position (- = earlier)</div>
+      </div>
+      <input type="number" id="boundaryOffset" value="0" min="-5" max="5">
+    </label>
+  </div>
+
+  <div class="section">
+    <label>
+      <div>
         <div class="label-text">Display mode</div>
       </div>
       <select id="displayMode">
@@ -210,7 +220,7 @@
     </label>
   </div>
 
-  <div class="version">v1.6.0</div>
+  <div class="version">v1.6.1</div>
 
   <script src="popup.js"></script>
 </body>

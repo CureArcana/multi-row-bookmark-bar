@@ -1,12 +1,13 @@
 {
   "manifest_version": 3,
   "name": "Multi-Row Bookmark Bar",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "ブックマークバーを自動で多段表示。収まりきらないブックマークも一目で見える。",
   "permissions": [
     "bookmarks",
     "storage",
-    "favicon"
+    "favicon",
+    "tabGroups"
   ],
   "host_permissions": [
     "<all_urls>"

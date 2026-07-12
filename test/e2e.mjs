@@ -177,6 +177,28 @@ try {
   check("fixed header re-adjusted on resize", Math.abs(narrow.headerTop - narrow.hostH) < 1,
     `headerTop=${narrow.headerTop} bar=${narrow.hostH}`);
 
+  // --- boundary offset: -2 shows 2 more items in ext bar ---
+  await page.setViewport({ width: 1280, height: 900 });
+  await sleep(500);
+  const baseFirst = await page.evaluate(() =>
+    parseInt(document.getElementById("mrbb-host").shadowRoot.querySelector(".mrbb-item").dataset.bmIndex, 10)
+  );
+  const setOffset = (v) => sw.evaluate(async (val) => {
+    const data = await chrome.storage.sync.get("mrbb-settings");
+    const s = data["mrbb-settings"] || {};
+    s.boundaryOffset = val;
+    await chrome.storage.sync.set({ "mrbb-settings": s });
+  }, v);
+  await setOffset(-2);
+  await sleep(800);
+  const offsetFirst = await page.evaluate(() =>
+    parseInt(document.getElementById("mrbb-host").shadowRoot.querySelector(".mrbb-item").dataset.bmIndex, 10)
+  );
+  check("boundaryOffset -2 starts 2 items earlier", offsetFirst === baseFirst - 2,
+    `base=${baseFirst} offset=${offsetFirst}`);
+  await setOffset(0);
+  await sleep(500);
+
   // --- everything fits -> bar disappears & page restored ---
   await sw.evaluate(async () => {
     const kids = await chrome.bookmarks.getChildren("1");
