@@ -5,7 +5,7 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 
-const EXT_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "multi-row-bookmark-bar-v1.6.0");
+const EXT_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "extension");
 
 // --- test page with a fixed header (push-down verification) ---
 const server = http.createServer((req, res) => {

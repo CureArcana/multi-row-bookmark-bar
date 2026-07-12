@@ -8,7 +8,7 @@ import path from "path";
 import os from "os";
 import { execFileSync } from "child_process";
 
-const EXT_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "multi-row-bookmark-bar-v1.6.0");
+const EXT_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "extension");
 
 const server = http.createServer((req, res) => {
   res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });

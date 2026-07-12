@@ -17,3 +17,16 @@ test/*.png
 # テスト実行時のスクリーンショット
 mrbb-*.png
 cal-*.png
+
+# 旧バージョン・開発時の遺物（ディスクには残すがリポジトリには含めない）
+multi-row-bookmark-bar-v1.4.4/
+multi-row-bookmark-bar-v1.5.0/
+multi-row-bookmark-bar-v1.5.1/
+multi-row-bookmark-bar-v1.6.0/
+dev-preview/
+src/
+build.mjs
+vite.config.ts
+tsconfig.json
+scripts/
+.claude/

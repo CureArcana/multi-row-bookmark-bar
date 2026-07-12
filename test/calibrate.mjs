@@ -8,7 +8,7 @@ import path from "path";
 import os from "os";
 import { execFileSync } from "child_process";
 
-const EXT_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "multi-row-bookmark-bar-v1.6.0");
+const EXT_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "extension");
 const TITLES = ["Google", "GitHub", "YouTube", "Twitter", "Reddit", "StackOverflow",
   "Notion", "Discord", "Figma", "Qiita", "Zenn", "Amazon", "Netflix", "Spotify",
   "Wikipedia", "MDN Web Docs", "Hacker News", "Product Hunt", "Dribbble", "Behance", "MyFolder"];
