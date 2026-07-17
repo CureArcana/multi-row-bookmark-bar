@@ -101,6 +101,15 @@
   "click": {
     "message": "クリック"
   },
+  "barColor": {
+    "message": "バーの背景色"
+  },
+  "barColorDesc": {
+    "message": "文字色は背景の明るさに合わせて自動調整されます。「標準に戻す」でライト/ダーク自動追従に戻ります。"
+  },
+  "barColorReset": {
+    "message": "標準に戻す"
+  },
   "barMode": {
     "message": "バーモード"
   },
@@ -129,7 +138,7 @@
     "message": "フォルダを閉じるまでの時間"
   },
   "hoverCloseDelayDesc": {
-    "message": "カーソルが離れてから閉じるまでのms (100 - 2000)"
+    "message": "カーソルが離れてから閉じるまでのms (0 - 2000)"
   },
   "enabled": {
     "message": "有効"
@@ -189,7 +198,7 @@
     "message": "隠すまでの時間 (ms)"
   },
   "autohideDelayDesc": {
-    "message": "バーのエリアから外れてから (100 - 5000)"
+    "message": "バーのエリアから外れてから (0 - 5000)"
   },
   "hideOnClick": {
     "message": "ブックマークを開いたら隠す"

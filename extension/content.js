@@ -18,6 +18,7 @@
     boundaryOffsetPx: 0,  // ネイティブバー使用可能幅の手動補正(px)。+ = 手前から表示。
                           // px 保存なので並べ替えでどのブックマークが境界に来ても補正が安定する
     hoverCloseMs: 400,    // ホバー展開したフォルダを、カーソルが離れてから閉じるまでの時間(ms)
+    barColor: "",         // バー背景色 (#rrggbb)。空 = 標準色（ライト/ダーク自動追従）
     displayBehavior: "autohide", // "autohide": ページ無改変のオーバーレイ（上端ホバーで表示）
                                  // "push": ページを押し下げて常時表示（fixed要素補正あり）
     // --- autohide の詳細設定 ---
@@ -545,6 +546,26 @@
     }
   }
 
+  // カスタム背景色の適用。文字・アイコン・ホバー色は背景の輝度から自動導出する。
+  // インラインスタイルなので content.css のライト/ダーク両方の :host 定義に勝つ。
+  // 空文字なら削除して標準色（prefers-color-scheme 追従)に戻す
+  function applyBarColor(host) {
+    var c = settings.barColor;
+    var derived = ["--mrbb-bg", "--mrbb-text", "--mrbb-icon", "--mrbb-hover", "--mrbb-active", "--mrbb-border"];
+    if (!c || !/^#[0-9a-fA-F]{6}$/.test(c)) {
+      derived.forEach(function (v) { host.style.removeProperty(v); });
+      return;
+    }
+    var r = parseInt(c.slice(1, 3), 16), g = parseInt(c.slice(3, 5), 16), b = parseInt(c.slice(5, 7), 16);
+    var light = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255 >= 0.5;
+    host.style.setProperty("--mrbb-bg", c);
+    host.style.setProperty("--mrbb-text", light ? "#474747" : "#e8e8e8");
+    host.style.setProperty("--mrbb-icon", light ? "#474747" : "#e8e8e8");
+    host.style.setProperty("--mrbb-hover", light ? "rgba(31,31,31,0.08)" : "rgba(232,232,232,0.14)");
+    host.style.setProperty("--mrbb-active", light ? "rgba(31,31,31,0.12)" : "rgba(232,232,232,0.2)");
+    host.style.setProperty("--mrbb-border", light ? "rgba(31,31,31,0.12)" : "rgba(255,255,255,0.14)");
+  }
+
   function setupDropdownDragDrop(dropdown, parentId) {
     dropdown.addEventListener("dragover", function (e) {
       e.preventDefault(); e.stopPropagation();
@@ -780,7 +801,7 @@
     if (ddr.bottom > window.innerHeight) dd.style.top = fx(Math.max(4, window.innerHeight - ddr.height - 4));
 
     if (mode === "hover") {
-      dropdownCleanup = setupHoverTracking(anchor, dd, settings.hoverCloseMs || 400);
+      dropdownCleanup = setupHoverTracking(anchor, dd, settings.hoverCloseMs !== undefined ? settings.hoverCloseMs : 400);
     }
     if (mode === "click") {
       var handler = function (e) {
@@ -851,7 +872,7 @@
           var inSub = ev.clientX >= subR.left - 8 && ev.clientX <= subR.right + 4 && ev.clientY >= subR.top - 4 && ev.clientY <= subR.bottom + 4;
           var inBridge = ev.clientY >= Math.min(elR.top, subR.top) - 4 && ev.clientY <= Math.max(elR.bottom, subR.bottom) + 4 && ev.clientX >= elR.right - 8 && ev.clientX <= subR.left + 8;
           if (inEl || inSub || inBridge) { if (subTimer) { clearTimeout(subTimer); subTimer = null; } }
-          else if (!subTimer) { subTimer = setTimeout(function () { sub.remove(); document.removeEventListener("mousemove", onSubMove, true); }, settings.hoverCloseMs || 400); }
+          else if (!subTimer) { subTimer = setTimeout(function () { sub.remove(); document.removeEventListener("mousemove", onSubMove, true); }, settings.hoverCloseMs !== undefined ? settings.hoverCloseMs : 400); }
         };
         document.addEventListener("mousemove", onSubMove, true);
         subCleanup = function () { document.removeEventListener("mousemove", onSubMove, true); if (subTimer) { clearTimeout(subTimer); subTimer = null; } };
@@ -912,10 +933,11 @@
       '<div class="mrbb-settings-row"><span>' + t("barMode") + ' <span class="mrbb-info" data-info="barModeInfo" title="' + t("barModeInfo").replace(/"/g, "&quot;") + '">&#9432;</span></span><select id="mrbb-bm-sel" style="border:1px solid #dadce0;border-radius:3px;padding:2px 4px;font-size:12px;"><option value="overflow"' + (settings.barMode === "overflow" ? " selected" : "") + '>' + t("overflowOnly") + '</option><option value="independent"' + (settings.barMode === "independent" ? " selected" : "") + '>' + t("allBookmarks") + '</option></select></div>' +
       '<div class="mrbb-settings-row"><span>' + t("displayBehavior") + ' <span class="mrbb-info" data-info="displayBehaviorDesc" title="' + t("displayBehaviorDesc").replace(/"/g, "&quot;") + '">&#9432;</span></span><select id="mrbb-db-sel" title="' + t("pushWarning") + '" style="border:1px solid #dadce0;border-radius:3px;padding:2px 4px;font-size:12px;"><option value="autohide"' + (settings.displayBehavior !== "push" ? " selected" : "") + '>' + t("autohideOption") + '</option><option value="push"' + (settings.displayBehavior === "push" ? " selected" : "") + ' title="' + t("pushWarning") + '">' + t("pushOption") + '</option></select></div>' +
       '<div class="mrbb-settings-row"><span>' + t("boundaryAdjust") + ' <span class="mrbb-info" data-info="boundaryInfo" title="' + t("boundaryInfo").replace(/"/g, "&quot;") + '">&#9432;</span></span><div class="mrbb-settings-fontsize"><button data-action="bo-dec" title="' + t("boundaryEarlier") + '">◀</button><span id="mrbb-bo-val">' + (settings.boundaryOffsetPx || 0) + 'px</span><button data-action="bo-inc" title="' + t("boundaryLater") + '">▶</button></div></div>' +
-      '<div class="mrbb-settings-row"><span>' + t("hoverCloseDelay") + ' <span class="mrbb-info" data-info="hoverCloseDelayDesc" title="' + t("hoverCloseDelayDesc").replace(/"/g, "&quot;") + '">&#9432;</span></span><div class="mrbb-settings-fontsize"><button data-action="hc-dec">-</button><span id="mrbb-hc-val">' + (settings.hoverCloseMs || 400) + 'ms</span><button data-action="hc-inc">+</button></div></div>' +
+      '<div class="mrbb-settings-row"><span>' + t("hoverCloseDelay") + ' <span class="mrbb-info" data-info="hoverCloseDelayDesc" title="' + t("hoverCloseDelayDesc").replace(/"/g, "&quot;") + '">&#9432;</span></span><div class="mrbb-settings-fontsize"><button data-action="hc-dec">-</button><span id="mrbb-hc-val">' + (settings.hoverCloseMs !== undefined ? settings.hoverCloseMs : 400) + 'ms</span><button data-action="hc-inc">+</button></div></div>' +
       '<div class="mrbb-settings-row"><span>' + t("revealEdge") + ' <span class="mrbb-info" data-info="revealEdgeDesc" title="' + t("revealEdgeDesc").replace(/"/g, "&quot;") + '">&#9432;</span></span><div class="mrbb-settings-fontsize"><button data-action="re-dec">-</button><span id="mrbb-re-val">' + (settings.revealEdgePx || 2) + 'px</span><button data-action="re-inc">+</button></div></div>' +
       '<div class="mrbb-settings-row"><span>' + t("revealDelay") + ' <span class="mrbb-info" data-info="revealDelayInfo" title="' + t("revealDelayInfo").replace(/"/g, "&quot;") + '">&#9432;</span></span><div class="mrbb-settings-fontsize"><button data-action="rd-dec">-</button><span id="mrbb-rd-val">' + (settings.revealDelayMs || 0) + 'ms</span><button data-action="rd-inc">+</button></div></div>' +
-      '<div class="mrbb-settings-row"><span>' + t("autohideDelay") + ' <span class="mrbb-info" data-info="autohideDelayDesc" title="' + t("autohideDelayDesc").replace(/"/g, "&quot;") + '">&#9432;</span></span><div class="mrbb-settings-fontsize"><button data-action="ad-dec">-</button><span id="mrbb-ad-val">' + (settings.autohideDelayMs || 400) + 'ms</span><button data-action="ad-inc">+</button></div></div>' +
+      '<div class="mrbb-settings-row"><span>' + t("autohideDelay") + ' <span class="mrbb-info" data-info="autohideDelayDesc" title="' + t("autohideDelayDesc").replace(/"/g, "&quot;") + '">&#9432;</span></span><div class="mrbb-settings-fontsize"><button data-action="ad-dec">-</button><span id="mrbb-ad-val">' + (settings.autohideDelayMs !== undefined ? settings.autohideDelayMs : 400) + 'ms</span><button data-action="ad-inc">+</button></div></div>' +
+      '<div class="mrbb-settings-row"><span>' + t("barColor") + ' <span class="mrbb-info" data-info="barColorDesc" title="' + t("barColorDesc").replace(/"/g, "&quot;") + '">&#9432;</span></span><div class="mrbb-settings-fontsize"><input type="color" id="mrbb-bc-input" value="' + (settings.barColor || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "#282828" : "#ffffff")) + '"><button data-action="bc-reset">' + t("barColorReset") + '</button></div></div>' +
       '<div class="mrbb-settings-row"><span>' + t("hideOnClick") + ' <span class="mrbb-info" data-info="hideOnClickInfo" title="' + t("hideOnClickInfo").replace(/"/g, "&quot;") + '">&#9432;</span></span><input type="checkbox" id="mrbb-hoc-chk"' + (settings.hideOnClick ? " checked" : "") + '></div>' +
       '<div class="mrbb-settings-row"><span>' + t("hideOnOutsideClick") + ' <span class="mrbb-info" data-info="hideOnOutsideClickInfo" title="' + t("hideOnOutsideClickInfo").replace(/"/g, "&quot;") + '">&#9432;</span></span><input type="checkbox" id="mrbb-hooc-chk"' + (settings.hideOnOutsideClick ? " checked" : "") + '></div>' +
       '<div class="mrbb-settings-row"><span>' + t("language") + ' <span class="mrbb-info" data-info="languageInfo" title="' + t("languageInfo").replace(/"/g, "&quot;") + '">&#9432;</span></span><select id="mrbb-lang-sel" style="border:1px solid #dadce0;border-radius:3px;padding:2px 4px;font-size:12px;"><option value="auto"' + ((settings.language || "auto") === "auto" ? " selected" : "") + '>' + t("langAuto") + '</option><option value="en"' + (settings.language === "en" ? " selected" : "") + '>English</option><option value="ja"' + (settings.language === "ja" ? " selected" : "") + '>日本語</option></select></div>';
@@ -985,13 +1007,19 @@
       var info = lastOverflowInfo;
       applyBoundaryStep((info && info.k < info.n) ? -info.widths[info.k] : -80);
     });
-    var hcValEl = panel.querySelector("#mrbb-hc-val");
-    panel.querySelector('[data-action="hc-dec"]').addEventListener("click", function () {
-      var v = Math.max(100, (settings.hoverCloseMs || 400) - 100); settings.hoverCloseMs = v; saveSettings(); if (hcValEl) hcValEl.textContent = v + "ms";
-    });
-    panel.querySelector('[data-action="hc-inc"]').addEventListener("click", function () {
-      var v = Math.min(2000, (settings.hoverCloseMs || 400) + 100); settings.hoverCloseMs = v; saveSettings(); if (hcValEl) hcValEl.textContent = v + "ms";
-    });
+    // ms系ステッパー: 200ms 以下は 50ms 刻み、それ以上は 100ms 刻み。0 まで下げられる
+    var bindMsStepper = function (decSel, incSel, valId, key, def, max) {
+      var valEl = panel.querySelector(valId);
+      var cur = function () { return settings[key] !== undefined ? settings[key] : def; };
+      var apply = function (v) { settings[key] = v; saveSettings(); if (valEl) valEl.textContent = v + "ms"; };
+      panel.querySelector(decSel).addEventListener("click", function () {
+        var v = cur(); apply(v <= 200 ? Math.max(0, v - 50) : v - 100);
+      });
+      panel.querySelector(incSel).addEventListener("click", function () {
+        var v = cur(); apply(v < 200 ? v + 50 : Math.min(max, v + 100));
+      });
+    };
+    bindMsStepper('[data-action="hc-dec"]', '[data-action="hc-inc"]', "#mrbb-hc-val", "hoverCloseMs", 400, 2000);
     var bindStepper = function (decSel, incSel, valId, key, def, min, max, step, unit) {
       var valEl = panel.querySelector(valId);
       panel.querySelector(decSel).addEventListener("click", function () {
@@ -1005,7 +1033,15 @@
     };
     bindStepper('[data-action="re-dec"]', '[data-action="re-inc"]', "#mrbb-re-val", "revealEdgePx", 2, 1, 50, 2, "px");
     bindStepper('[data-action="rd-dec"]', '[data-action="rd-inc"]', "#mrbb-rd-val", "revealDelayMs", 0, 0, 1000, 50, "ms");
-    bindStepper('[data-action="ad-dec"]', '[data-action="ad-inc"]', "#mrbb-ad-val", "autohideDelayMs", 400, 100, 5000, 100, "ms");
+    bindMsStepper('[data-action="ad-dec"]', '[data-action="ad-inc"]', "#mrbb-ad-val", "autohideDelayMs", 400, 5000);
+    // 背景色: "change"（ピッカーを閉じた時）のみ保存。"input" はドラッグ中に連続発火し
+    // storage.sync の書き込みクォータを食い潰すため使わない
+    var bcInput = panel.querySelector("#mrbb-bc-input");
+    bcInput.addEventListener("change", function (e) { settings.barColor = e.target.value; saveSettings(); });
+    panel.querySelector('[data-action="bc-reset"]').addEventListener("click", function () {
+      settings.barColor = ""; saveSettings();
+      bcInput.value = window.matchMedia("(prefers-color-scheme: dark)").matches ? "#282828" : "#ffffff";
+    });
     panel.querySelector("#mrbb-hoc-chk").addEventListener("change", function (e) { settings.hideOnClick = e.target.checked; saveSettings(); });
     panel.querySelector("#mrbb-hooc-chk").addEventListener("change", function (e) { settings.hideOnOutsideClick = e.target.checked; saveSettings(); });
     panel.querySelector("#mrbb-lang-sel").addEventListener("change", function (e) {
@@ -1131,7 +1167,7 @@
   }
   function scheduleHide() {
     clearTimeout(autohideTimer);
-    autohideTimer = setTimeout(hideBar, settings.autohideDelayMs || 400);
+    autohideTimer = setTimeout(hideBar, settings.autohideDelayMs !== undefined ? settings.autohideDelayMs : 400);
   }
   function cancelHide() { clearTimeout(autohideTimer); autohideTimer = null; }
   function cancelReveal() { if (revealTimer) { clearTimeout(revealTimer); revealTimer = null; } }
@@ -1343,6 +1379,7 @@
     hostEl.style.setProperty("--mrbb-font-size", fs + "px");
     hostEl.style.setProperty("--mrbb-bar-height", bh + "px");
     hostEl.style.setProperty("--mrbb-item-height", itemH + "px");
+    applyBarColor(hostEl);
 
     // ブックマークバー内での実 index（D&D の移動先計算に使う）
     var bmIndexMap = {};

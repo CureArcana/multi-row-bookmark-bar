@@ -101,6 +101,15 @@
   "click": {
     "message": "Click"
   },
+  "barColor": {
+    "message": "Bar background color"
+  },
+  "barColorDesc": {
+    "message": "Text color adjusts to the background automatically. Reset returns to the default light/dark colors."
+  },
+  "barColorReset": {
+    "message": "Reset"
+  },
   "barMode": {
     "message": "Bar mode"
   },
@@ -129,7 +138,7 @@
     "message": "Folder close delay"
   },
   "hoverCloseDelayDesc": {
-    "message": "ms until a hovered folder closes (100 - 2000)"
+    "message": "ms until a hovered folder closes (0 - 2000)"
   },
   "enabled": {
     "message": "Enabled"
@@ -189,7 +198,7 @@
     "message": "Hide delay (ms)"
   },
   "autohideDelayDesc": {
-    "message": "After leaving the bar area (100 - 5000)"
+    "message": "After leaving the bar area (0 - 5000)"
   },
   "hideOnClick": {
     "message": "Hide after opening a bookmark"

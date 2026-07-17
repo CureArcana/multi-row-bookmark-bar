@@ -151,6 +151,20 @@
     .toggle input:checked + .slider { background: var(--accent); }
     .toggle input:checked + .slider::before { transform: translateX(18px); }
 
+    .color-control { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+    .color-control input[type="color"] {
+      width: 46px; height: 32px; padding: 2px;
+      border: 1px solid var(--border); border-radius: 6px;
+      background: var(--panel); cursor: pointer;
+    }
+    .btn-small {
+      padding: 6px 12px;
+      border: 1px solid var(--border); border-radius: 6px;
+      background: var(--panel); color: var(--text);
+      font-size: 12px; cursor: pointer;
+    }
+    .btn-small:hover { background: var(--bg); }
+
     .btn {
       display: inline-block;
       padding: 9px 18px;
@@ -333,6 +347,16 @@
       </div>
       <div class="setting-row">
         <div>
+          <div class="setting-label" data-i18n="barColor">Bar background color</div>
+          <div class="setting-desc" data-i18n="barColorDesc">Text color adjusts to the background automatically</div>
+        </div>
+        <div class="color-control">
+          <input type="color" id="barColor" value="#ffffff">
+          <button type="button" class="btn-small" id="barColorReset" data-i18n="barColorReset">Reset</button>
+        </div>
+      </div>
+      <div class="setting-row">
+        <div>
           <div class="setting-label" data-i18n="maxRowsShort">Max rows</div>
           <div class="setting-desc" data-i18n="maxRowsDesc">0 = unlimited</div>
         </div>
@@ -375,9 +399,9 @@
       <div class="setting-row">
         <div>
           <div class="setting-label" data-i18n="autohideDelay">Hide delay (ms)</div>
-          <div class="setting-desc" data-i18n="autohideDelayDesc">After leaving the bar area (100 - 5000)</div>
+          <div class="setting-desc" data-i18n="autohideDelayDesc">After leaving the bar area (0 - 5000)</div>
         </div>
-        <input type="number" id="autohideDelayMs" value="400" min="100" max="5000" step="100">
+        <input type="number" id="autohideDelayMs" value="400" min="0" max="5000" step="50">
       </div>
       <div class="setting-row">
         <div><div class="setting-label" data-i18n="hideOnClick">Hide after opening a bookmark</div></div>
@@ -422,9 +446,9 @@
       <div class="setting-row">
         <div>
           <div class="setting-label" data-i18n="hoverCloseDelay">Folder close delay</div>
-          <div class="setting-desc" data-i18n="hoverCloseDelayDesc">ms until a hovered folder closes (100 - 2000)</div>
+          <div class="setting-desc" data-i18n="hoverCloseDelayDesc">ms until a hovered folder closes (0 - 2000)</div>
         </div>
-        <input type="number" id="hoverCloseMs" value="400" min="100" max="2000" step="100">
+        <input type="number" id="hoverCloseMs" value="400" min="0" max="2000" step="50">
       </div>
       <div class="setting-row">
         <div><div class="setting-label" data-i18n="showCondition">Show condition</div></div>

@@ -14,6 +14,7 @@
     boundaryOffset: 0,
     boundaryOffsetPx: 0,
     hoverCloseMs: 400,
+    barColor: "",
     displayBehavior: "autohide",
     revealEdgePx: 2,
     revealDelayMs: 0,
@@ -24,6 +25,8 @@
     language: "auto",
   };
   const $ = (id) => document.getElementById(id);
+  // 0 を有効値として扱う整数パース（`|| default` は 0 を潰すため）
+  const toInt = (v, def) => { const n = parseInt(v, 10); return Number.isNaN(n) ? def : n; };
   // chrome.* が無い環境（file:// で開いた場合など）でも表示だけはできるようにする
   const hasChrome = typeof chrome !== "undefined" && !!chrome.storage;
 
@@ -95,8 +98,12 @@
     $("language").value = s.language || "auto";
     $("displayMode").value = s.displayMode;
     $("folderOpenMode").value = s.folderOpenMode;
-    $("hoverCloseMs").value = String(s.hoverCloseMs || 400);
+    $("hoverCloseMs").value = String(s.hoverCloseMs ?? 400);
     $("showCondition").value = s.showCondition;
+    // カラー input は空値を持てないため、カスタム色か標準かを dataset.custom で区別する
+    const bc = $("barColor");
+    bc.value = s.barColor || "#ffffff";
+    bc.dataset.custom = s.barColor ? "1" : "";
     return s;
   }
 
@@ -113,14 +120,15 @@
       displayBehavior: $("displayBehavior").value,
       revealEdgePx: Math.max(1, Math.min(50, parseInt($("revealEdgePx").value, 10) || 2)),
       revealDelayMs: Math.max(0, Math.min(1000, parseInt($("revealDelayMs").value, 10) || 0)),
-      autohideDelayMs: Math.max(100, Math.min(5000, parseInt($("autohideDelayMs").value, 10) || 400)),
+      autohideDelayMs: Math.max(0, Math.min(5000, toInt($("autohideDelayMs").value, 400))),
       hideOnClick: $("hideOnClick").checked,
       hideOnOutsideClick: $("hideOnOutsideClick").checked,
       ntpMode: $("ntpMode").value,
       language: $("language").value,
       displayMode: $("displayMode").value,
       folderOpenMode: $("folderOpenMode").value,
-      hoverCloseMs: Math.max(100, Math.min(2000, parseInt($("hoverCloseMs").value, 10) || 400)),
+      hoverCloseMs: Math.max(0, Math.min(2000, toInt($("hoverCloseMs").value, 400))),
+      barColor: $("barColor").dataset.custom ? $("barColor").value : "",
       showCondition: $("showCondition").value,
     };
     await chrome.storage.sync.set({ [STORAGE_KEY]: s });
@@ -139,8 +147,16 @@
     await applyLanguage(s.language || "auto");
 
     document.querySelectorAll("#sec-settings input, #sec-settings select").forEach((el) => {
+      if (el.id === "barColor") return; // 下で個別に処理（input 連続発火での保存を避ける）
       el.addEventListener("change", save);
       el.addEventListener("input", save);
+    });
+    $("barColor").addEventListener("change", () => { $("barColor").dataset.custom = "1"; save(); });
+    $("barColorReset").addEventListener("click", () => {
+      const bc = $("barColor");
+      bc.dataset.custom = "";
+      bc.value = "#ffffff";
+      save();
     });
     $("language").addEventListener("change", () => applyLanguage($("language").value));
   }

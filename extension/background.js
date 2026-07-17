@@ -14,6 +14,7 @@
     boundaryOffset: 0,
     boundaryOffsetPx: 0,
     hoverCloseMs: 400,
+    barColor: "",
     displayBehavior: "autohide",
     revealEdgePx: 2,
     revealDelayMs: 0,
@@ -68,6 +69,8 @@
       if (!data[STORAGE_KEY]) {
         await chrome.storage.sync.set({ [STORAGE_KEY]: DEFAULT_SETTINGS });
       }
+      // 初回インストール時のみ使い方ページを開く（アップデート時は開かない）
+      chrome.tabs.create({ url: chrome.runtime.getURL("howto.html") });
     }
   });
 
