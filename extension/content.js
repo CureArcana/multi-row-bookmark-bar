@@ -611,6 +611,67 @@
     });
   }
 
+  // ===== Input Dialog =====
+  // window.prompt() は環境（拡張ページや一部の Chrome ビルド）でブロックされ、
+  // ダイアログが出ないまま null が返って「何も起きない」状態になるため、
+  // シャドウ DOM 内のインラインダイアログで置き換える
+  var activeDialog = null;
+  function closeDialog() { if (activeDialog) { activeDialog.remove(); activeDialog = null; } }
+
+  function showInputDialog(titleText, fields, onSubmit) {
+    closeDialog();
+    var overlay = document.createElement("div");
+    overlay.className = "mrbb-dialog-overlay";
+    var box = document.createElement("div");
+    box.className = "mrbb-dialog";
+    var h = document.createElement("div");
+    h.className = "mrbb-dialog-title";
+    h.textContent = titleText;
+    box.appendChild(h);
+    var inputs = fields.map(function (f) {
+      var label = document.createElement("label");
+      label.className = "mrbb-dialog-label";
+      label.textContent = f.label;
+      var input = document.createElement("input");
+      input.type = "text";
+      input.className = "mrbb-dialog-input";
+      input.value = f.value || "";
+      box.appendChild(label);
+      box.appendChild(input);
+      return input;
+    });
+    var row = document.createElement("div");
+    row.className = "mrbb-dialog-buttons";
+    var cancel = document.createElement("button");
+    cancel.className = "mrbb-dialog-btn";
+    cancel.textContent = t("dlgCancel");
+    var ok = document.createElement("button");
+    ok.className = "mrbb-dialog-btn mrbb-dialog-primary";
+    ok.textContent = "OK";
+    row.appendChild(cancel);
+    row.appendChild(ok);
+    box.appendChild(row);
+    overlay.appendChild(box);
+    var submit = function () {
+      var vals = inputs.map(function (i) { return i.value; });
+      closeDialog();
+      onSubmit(vals);
+    };
+    ok.addEventListener("click", submit);
+    cancel.addEventListener("click", closeDialog);
+    overlay.addEventListener("mousedown", function (e) { if (e.target === overlay) closeDialog(); e.stopPropagation(); });
+    overlay.addEventListener("click", function (e) { e.stopPropagation(); });
+    overlay.addEventListener("keydown", function (e) {
+      e.stopPropagation();
+      if (e.key === "Enter") submit();
+      else if (e.key === "Escape") closeDialog();
+    });
+    if (shadowRoot) shadowRoot.appendChild(overlay);
+    activeDialog = overlay;
+    inputs[0].focus();
+    inputs[0].select();
+  }
+
   // ===== Context Menu =====
   function closeContextMenu() { if (activeContextMenu) { activeContextMenu.remove(); activeContextMenu = null; } }
 
@@ -683,13 +744,15 @@
       menu.appendChild(createMenuSeparator());
     }
     menu.appendChild(createMenuItem(t("rename"), function () {
-      var n = prompt(t("promptNewName"), title);
-      if (n !== null && n !== title) chrome.runtime.sendMessage({ type: "MRBB_UPDATE_BOOKMARK", id: id, changes: { title: n } });
+      showInputDialog(t("rename"), [{ label: t("promptNewName"), value: title }], function (vals) {
+        if (vals[0] !== title) chrome.runtime.sendMessage({ type: "MRBB_UPDATE_BOOKMARK", id: id, changes: { title: vals[0] } });
+      });
     }));
     if (!isFolder) {
       menu.appendChild(createMenuItem(t("editUrl"), function () {
-        var u = prompt(t("promptNewUrl"), url);
-        if (u !== null && u !== url) chrome.runtime.sendMessage({ type: "MRBB_UPDATE_BOOKMARK", id: id, changes: { url: u } });
+        showInputDialog(t("editUrl"), [{ label: t("promptNewUrl"), value: url }], function (vals) {
+          if (vals[0] && vals[0] !== url) chrome.runtime.sendMessage({ type: "MRBB_UPDATE_BOOKMARK", id: id, changes: { url: vals[0] } });
+        });
       }));
     }
     if (parentId !== "1") {
@@ -702,14 +765,17 @@
 
   function addCommonActions(menu, parentId) {
     menu.appendChild(createMenuItem(t("addPage"), function () {
-      var name = prompt(t("promptBookmarkName"), document.title);
-      if (name === null) return;
-      var u = prompt(t("promptUrl"), window.location.href);
-      if (u !== null) chrome.runtime.sendMessage({ type: "MRBB_CREATE_BOOKMARK", parentId: parentId, title: name, url: u });
+      showInputDialog(t("addPage"), [
+        { label: t("promptBookmarkName"), value: document.title },
+        { label: t("promptUrl"), value: window.location.href },
+      ], function (vals) {
+        if (vals[1]) chrome.runtime.sendMessage({ type: "MRBB_CREATE_BOOKMARK", parentId: parentId, title: vals[0], url: vals[1] });
+      });
     }));
     menu.appendChild(createMenuItem(t("addFolder"), function () {
-      var name = prompt(t("promptFolderName"));
-      if (name !== null && name.trim() !== "") chrome.runtime.sendMessage({ type: "MRBB_CREATE_FOLDER", parentId: parentId, title: name.trim() });
+      showInputDialog(t("addFolder"), [{ label: t("promptFolderName"), value: "" }], function (vals) {
+        if (vals[0].trim() !== "") chrome.runtime.sendMessage({ type: "MRBB_CREATE_FOLDER", parentId: parentId, title: vals[0].trim() });
+      });
     }));
     menu.appendChild(createMenuSeparator());
     menu.appendChild(createMenuItem(t("sortByName"), function () { chrome.runtime.sendMessage({ type: "MRBB_SORT_BOOKMARKS", parentId: parentId, sortBy: "title" }); }));
@@ -1204,7 +1270,7 @@
   function hideBar() {
     if (!hostEl || !barShown) return;
     // 操作中は隠さない
-    if (isDragging() || activeDropdown || activeContextMenu) return;
+    if (isDragging() || activeDropdown || activeContextMenu || activeDialog) return;
     if (shadowRoot && shadowRoot.querySelector(".mrbb-settings-panel")) return;
     barShown = false;
     hostEl.classList.remove("mrbb-shown");

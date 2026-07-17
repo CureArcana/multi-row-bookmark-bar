@@ -101,6 +101,9 @@
   "click": {
     "message": "クリック"
   },
+  "dlgCancel": {
+    "message": "キャンセル"
+  },
   "assignShortcut": {
     "message": "ショートカットキーを割り当て"
   },

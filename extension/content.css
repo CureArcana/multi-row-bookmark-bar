@@ -223,6 +223,38 @@
   background: var(--mrbb-menu-bg); cursor: pointer;
 }
 
+/* 入力ダイアログ（prompt() 代替。環境によって prompt がブロックされるため） */
+.mrbb-dialog-overlay {
+  position: fixed; inset: 0; z-index: 2147483647;
+  background: rgba(0, 0, 0, 0.25);
+  display: flex; align-items: flex-start; justify-content: center;
+}
+.mrbb-dialog {
+  margin-top: 120px; min-width: 340px; max-width: 90vw;
+  background: var(--mrbb-menu-bg); color: var(--mrbb-menu-text);
+  border: 1px solid var(--mrbb-menu-border); border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25); padding: 16px 18px;
+  font-family: "Segoe UI", "Yu Gothic UI", Meiryo, system-ui, sans-serif; font-size: 13px;
+}
+.mrbb-dialog-title { font-weight: 600; font-size: 14px; margin-bottom: 8px; }
+.mrbb-dialog-label { display: block; font-size: 12px; margin: 10px 0 4px; color: var(--mrbb-menu-text); opacity: 0.8; }
+.mrbb-dialog-input {
+  width: 100%; box-sizing: border-box; padding: 6px 10px;
+  border: 1px solid var(--mrbb-menu-border); border-radius: 6px;
+  background: var(--mrbb-menu-bg); color: var(--mrbb-menu-text);
+  font-size: 13px; font-family: inherit; outline: none;
+}
+.mrbb-dialog-input:focus { border-color: var(--mrbb-accent); }
+.mrbb-dialog-buttons { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+.mrbb-dialog-btn {
+  padding: 6px 16px; border: 1px solid var(--mrbb-menu-border); border-radius: 6px;
+  background: var(--mrbb-menu-bg); color: var(--mrbb-menu-text);
+  font-size: 13px; font-family: inherit; cursor: pointer;
+}
+.mrbb-dialog-btn:hover { background: var(--mrbb-menu-hover); }
+.mrbb-dialog-primary { background: var(--mrbb-accent); border-color: var(--mrbb-accent); color: var(--mrbb-menu-bg); }
+.mrbb-dialog-primary:hover { opacity: 0.9; }
+
 /* Search */
 .mrbb-search-container {
   display: inline-flex; align-items: center;

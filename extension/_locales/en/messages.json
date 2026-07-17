@@ -101,6 +101,9 @@
   "click": {
     "message": "Click"
   },
+  "dlgCancel": {
+    "message": "Cancel"
+  },
   "assignShortcut": {
     "message": "Assign shortcut key"
   },
