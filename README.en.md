@@ -19,6 +19,7 @@ A Chrome extension that shows the bookmarks hidden behind the `>>` overflow of C
 - **Overflow continuation** — Starts exactly from the bookmarks that don't fit on the native bar (hidden behind `>>`). When everything fits, the extension bar disappears entirely.
 - **Follows the native bar automatically** — Recalculates instantly when tab groups change. If you hide the native bar with Ctrl+Shift+B, it switches to rendering all bookmarks (no estimation, always exact); in F11 fullscreen it hides itself.
 - **Looks identical to Chrome's native bar** — Font, background, text color, folder icon, and hover states all matched to measured Chrome values (dark mode supported).
+- **Custom bar background color** — Pick any color; text and icon colors adjust automatically to the background's brightness.
 - **Never modifies the page (auto-hide, default)** — The bar stays off-screen and slides down when you move the cursor to the very top edge. Because it never touches the page layout, no site ever breaks.
 - **Push mode (optional)** — If you prefer it always visible, choose "Push page down" in Display settings (auto-offsets fixed/sticky headers; may break on some sites).
 - **Automatic wrapping** — The number of rows adjusts to window width and to bookmark count changes.
@@ -31,7 +32,13 @@ A Chrome extension that shows the bookmarks hidden behind the `>>` overflow of C
 
 ## Install
 
-Installed directly from GitHub, not the Chrome Web Store — **no Google review required**.
+### Chrome Web Store (recommended)
+
+Search for **"Multi-Row Bookmark Bar"** on the [Chrome Web Store](https://chromewebstore.google.com/) and install it.
+
+### Directly from GitHub (developer mode)
+
+For the latest development version:
 
 1. Get the `extension/` folder from this repository (clone or download ZIP)
 2. Open `chrome://extensions` in Chrome
@@ -42,7 +49,7 @@ No build step required (plain JS).
 
 ## Settings
 
-Configurable from the extension icon popup or the gear at the left end of the bar.
+Clicking the toolbar icon opens the how-to & settings page (also shown automatically on first install). The same settings are available from the gear ⚙ at the left end of the bar.
 
 | Setting | Default | Description |
 |---------|---------|-------------|
@@ -50,12 +57,13 @@ Configurable from the extension icon popup or the gear at the left end of the ba
 | Language | Match browser | Can be pinned to English / 日本語 |
 | New tab page | Custom with bar | Revertible to Chrome default |
 | Display | Auto-hide overlay | Push-down always-visible mode also available (may break some sites) |
-| Auto-hide details | 2px / 0ms / 400ms | Reveal-area height, reveal delay, hide delay, and hide-on-click toggles |
+| Auto-hide details | 2px / 0ms / 400ms | Reveal-area height, reveal delay, hide delay (down to 0ms), and hide-on-click toggles |
 | Bar mode | Overflow only | Can switch to showing all bookmarks |
 | Boundary offset | 0px | Corrects the estimate of the native bar's capacity via ◀▶ (stored in px, stable across reordering) |
 | Max rows | 0 (unlimited) | Maximum number of rows to show |
-| Folder open / close delay | Hover / 400ms | Switchable to click-to-open; close delay adjustable |
+| Folder open / close delay | Hover / 400ms | Switchable to click-to-open; close delay adjustable down to 0ms |
 | Font size / row height | 12px / 36px | Visual tuning of the extension bar |
+| Bar background color | Default (follows light/dark) | Any color via the picker; text color adjusts automatically, ↺ resets to default |
 
 Each setting has an ⓘ icon that reveals an explanation.
 
@@ -89,6 +97,7 @@ npm run test:visual
 - Does not work on `chrome://` pages or the Chrome Web Store (Chrome security restriction). The new tab is covered by the custom NTP (enabled by default).
 - The native bar's capacity is an estimate and may be off by ±1 item depending on the environment (correctable with the gear panel's Boundary offset ◀▶; once set, it stays stable thanks to px storage).
 - Push mode may break the layout on some sites (fixed headers, 100vh layouts). This never happens in the default auto-hide mode.
+- **Folders** cannot be moved from the native bar into the extension bar via drag & drop (Chrome does not expose folder drag data to web pages; the reverse direction and URL bookmarks work fine). Switching the bar mode to "All bookmarks" removes this constraint entirely.
 
 ## License
 
