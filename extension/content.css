@@ -217,6 +217,11 @@
 }
 .mrbb-settings-fontsize button:hover { background: var(--mrbb-menu-hover); }
 .mrbb-settings-fontsize span { min-width: 36px; text-align: center; font-size: 13px; }
+.mrbb-settings-fontsize input[type="color"] {
+  width: 48px; height: 24px; padding: 1px;
+  border: 1px solid var(--mrbb-menu-border); border-radius: 4px;
+  background: var(--mrbb-menu-bg); cursor: pointer;
+}
 
 /* Search */
 .mrbb-search-container {
