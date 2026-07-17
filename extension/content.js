@@ -1325,11 +1325,26 @@
         else if (barShown && e.clientY <= barBottom) cancelHide();
       }
     }, true);
-    // カーソルがウィンドウ外（別モニタ・ブラウザUI等）へ出たら隠す判定を開始。
-    // 横方向に出ると mousemove が発火しなくなり Y 座標判定だけでは検知できない
+    // カーソルがウィンドウ外へ出た時の判定。ブラウザ UI 上ではページにイベントが
+    // 来ないため、出て行く瞬間の座標で方向を判定するしかない。
+    // ・上端から出た = アドレスバーやネイティブブックマークバーの上にいる → 表示する
+    // ・横・下から出た = 別モニタ等へ移動 → 隠す判定を開始（mousemove が止まり
+    //   Y 座標判定では検知できないため、ここで拾う）
     document.addEventListener("mouseout", function (e) {
-      if (!isAutohide() || !hostEl || !barShown) return;
+      if (!isAutohide() || !hostEl) return;
       if (e.relatedTarget) return; // relatedTarget があればウィンドウ内の移動
+      var barBottom = (barHeightPx / (currentZoom || 1)) + 24;
+      if (e.clientY <= Math.max(48, barBottom)) {
+        // 上方向への退出（高速移動でも最終座標は上端近くに残る）
+        cancelHide();
+        if (!barShown && !revealTimer) {
+          var d = settings.revealDelayMs || 0;
+          if (d <= 0) showBar();
+          else revealTimer = setTimeout(function () { revealTimer = null; showBar(); }, d);
+        }
+        return;
+      }
+      if (!barShown) return;
       cancelReveal();
       scheduleHide();
     }, true);
