@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "__MSG_extName__",
-  "version": "2.4.5",
+  "version": "2.4.6",
   "description": "__MSG_extDesc__",
   "default_locale": "en",
   "permissions": [
@@ -45,6 +45,42 @@
         "default": "Alt+Shift+B"
       },
       "description": "Toggle multi-row bookmark bar"
+    },
+    "open-bookmark-1": {
+      "suggested_key": {
+        "default": "Alt+1"
+      },
+      "description": "__MSG_cmdOpenBookmark1__"
+    },
+    "open-bookmark-2": {
+      "suggested_key": {
+        "default": "Alt+2"
+      },
+      "description": "__MSG_cmdOpenBookmark2__"
+    },
+    "open-bookmark-3": {
+      "suggested_key": {
+        "default": "Alt+3"
+      },
+      "description": "__MSG_cmdOpenBookmark3__"
+    },
+    "open-bookmark-4": {
+      "description": "__MSG_cmdOpenBookmark4__"
+    },
+    "open-bookmark-5": {
+      "description": "__MSG_cmdOpenBookmark5__"
+    },
+    "open-bookmark-6": {
+      "description": "__MSG_cmdOpenBookmark6__"
+    },
+    "open-bookmark-7": {
+      "description": "__MSG_cmdOpenBookmark7__"
+    },
+    "open-bookmark-8": {
+      "description": "__MSG_cmdOpenBookmark8__"
+    },
+    "open-bookmark-9": {
+      "description": "__MSG_cmdOpenBookmark9__"
     }
   },
   "web_accessible_resources": [

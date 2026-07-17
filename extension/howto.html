@@ -106,6 +106,7 @@
       padding: 12px 16px;
       margin: 12px 0;
     }
+    .note a { color: var(--accent); }
     .ok { color: var(--ok); font-weight: 600; }
     .ng { color: var(--ng); font-weight: 600; }
 
@@ -248,6 +249,12 @@
           <b>回避策:</b> バーモードを「すべてのブックマーク」にするか、ブックマークマネージャ（<code>chrome://bookmarks</code>）で移動してください。
         </div>
 
+        <h2>ブックマークのショートカットキー</h2>
+        <p>バー上のブックマークを右クリック →「<b>ショートカットキーを割り当て</b>」で、キー一発で新しいタブに開けるようになります（例: <kbd>Alt</kbd>+<kbd>1</kbd> で YouTube）。スロットは9個あり、もう一度同じスロットを選ぶと解除できます。</p>
+        <div class="note">
+          Chrome の仕様で、初期キーを持てるのは拡張全体で4個までのため、<kbd>Alt</kbd>+<kbd>1</kbd>〜<kbd>3</kbd> だけ最初から使えます。スロット4〜9を使うには <a href="#" class="mrbb-open-shortcuts">Chrome のショートカット設定</a>（chrome://extensions/shortcuts）でキーを割り当ててください。
+        </div>
+
         <h2>新しいタブ</h2>
         <ul>
           <li><b>カスタム</b> — 新しいタブにも拡張バーを表示します。</li>
@@ -302,6 +309,12 @@
         <div class="note">
           For security reasons Chrome does not expose folder drag data to web pages, so no extension can implement this (URL bookmarks work fine).<br>
           <b>Workaround:</b> switch the bar mode to "All bookmarks", or move folders in the Bookmark Manager (<code>chrome://bookmarks</code>).
+        </div>
+
+        <h2>Bookmark shortcut keys</h2>
+        <p>Right-click a bookmark on the bar → "<b>Assign shortcut key</b>" to open it in a new tab with a single keystroke (e.g. <kbd>Alt</kbd>+<kbd>1</kbd> for YouTube). There are 9 slots; selecting the same slot again removes the assignment.</p>
+        <div class="note">
+          Chrome allows at most 4 default keys per extension, so only <kbd>Alt</kbd>+<kbd>1</kbd>–<kbd>3</kbd> work out of the box. To use slots 4–9, assign keys in <a href="#" class="mrbb-open-shortcuts">Chrome's shortcut settings</a> (chrome://extensions/shortcuts).
         </div>
 
         <h2>New tab</h2>

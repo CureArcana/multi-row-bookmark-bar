@@ -158,6 +158,13 @@
       bc.value = "#ffffff";
       save();
     });
+    // chrome:// への <a href> 遷移はブロックされるため tabs.create で開く
+    document.querySelectorAll(".mrbb-open-shortcuts").forEach((el) => {
+      el.addEventListener("click", (e) => {
+        e.preventDefault();
+        if (hasChrome && chrome.tabs) chrome.tabs.create({ url: "chrome://extensions/shortcuts" });
+      });
+    });
     $("language").addEventListener("change", () => applyLanguage($("language").value));
   }
 

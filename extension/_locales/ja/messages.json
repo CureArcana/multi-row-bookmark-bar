@@ -101,6 +101,27 @@
   "click": {
     "message": "クリック"
   },
+  "assignShortcut": {
+    "message": "ショートカットキーを割り当て"
+  },
+  "scNoKey": {
+    "message": "キー未設定"
+  },
+  "scEmpty": {
+    "message": "空き"
+  },
+  "scOpenSettings": {
+    "message": "ショートカットキーの設定を開く"
+  },
+  "cmdOpenBookmark1": { "message": "割り当てブックマーク 1 を開く" },
+  "cmdOpenBookmark2": { "message": "割り当てブックマーク 2 を開く" },
+  "cmdOpenBookmark3": { "message": "割り当てブックマーク 3 を開く" },
+  "cmdOpenBookmark4": { "message": "割り当てブックマーク 4 を開く" },
+  "cmdOpenBookmark5": { "message": "割り当てブックマーク 5 を開く" },
+  "cmdOpenBookmark6": { "message": "割り当てブックマーク 6 を開く" },
+  "cmdOpenBookmark7": { "message": "割り当てブックマーク 7 を開く" },
+  "cmdOpenBookmark8": { "message": "割り当てブックマーク 8 を開く" },
+  "cmdOpenBookmark9": { "message": "割り当てブックマーク 9 を開く" },
   "barColor": {
     "message": "バーの背景色"
   },

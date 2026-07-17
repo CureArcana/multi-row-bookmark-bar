@@ -101,6 +101,27 @@
   "click": {
     "message": "Click"
   },
+  "assignShortcut": {
+    "message": "Assign shortcut key"
+  },
+  "scNoKey": {
+    "message": "No key"
+  },
+  "scEmpty": {
+    "message": "empty"
+  },
+  "scOpenSettings": {
+    "message": "Open shortcut key settings"
+  },
+  "cmdOpenBookmark1": { "message": "Open assigned bookmark 1" },
+  "cmdOpenBookmark2": { "message": "Open assigned bookmark 2" },
+  "cmdOpenBookmark3": { "message": "Open assigned bookmark 3" },
+  "cmdOpenBookmark4": { "message": "Open assigned bookmark 4" },
+  "cmdOpenBookmark5": { "message": "Open assigned bookmark 5" },
+  "cmdOpenBookmark6": { "message": "Open assigned bookmark 6" },
+  "cmdOpenBookmark7": { "message": "Open assigned bookmark 7" },
+  "cmdOpenBookmark8": { "message": "Open assigned bookmark 8" },
+  "cmdOpenBookmark9": { "message": "Open assigned bookmark 9" },
   "barColor": {
     "message": "Bar background color"
   },

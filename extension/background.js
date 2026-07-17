@@ -2,6 +2,9 @@
   "use strict";
 
   const STORAGE_KEY = "mrbb-settings";
+  // ショートカット割当は設定と別キーで保存する
+  // （設定ページの save() は既知フィールドだけで上書きするため、混ぜると消える）
+  const SHORTCUTS_KEY = "mrbb-shortcuts";
   const DEFAULT_SETTINGS = {
     enabled: true,
     maxRows: 0,
@@ -224,6 +227,45 @@
       return true;
     }
 
+    if (msg.type === "MRBB_SHORTCUTS_INFO") {
+      // スロット割当と、各コマンドに現在バインドされているキーを返す
+      (async () => {
+        const data = await chrome.storage.sync.get(SHORTCUTS_KEY);
+        const commands = chrome.commands ? await chrome.commands.getAll() : [];
+        const keys = {};
+        for (const c of commands) if (c.name) keys[c.name] = c.shortcut || "";
+        sendResponse({ slots: data[SHORTCUTS_KEY] || {}, keys });
+      })().catch(() => sendResponse({ slots: {}, keys: {} }));
+      return true;
+    }
+
+    if (msg.type === "MRBB_SHORTCUT_SET") {
+      // bookmark を渡すと割当（同じブックマークの既存割当は自動で外す）、null で解除
+      (async () => {
+        const data = await chrome.storage.sync.get(SHORTCUTS_KEY);
+        const slots = data[SHORTCUTS_KEY] || {};
+        if (msg.bookmark) {
+          for (const k of Object.keys(slots)) {
+            if (slots[k] && slots[k].id === msg.bookmark.id) delete slots[k];
+          }
+          slots[String(msg.slot)] = msg.bookmark;
+        } else {
+          delete slots[String(msg.slot)];
+        }
+        await chrome.storage.sync.set({ [SHORTCUTS_KEY]: slots });
+        sendResponse({ success: true });
+      })().catch((err) => sendResponse({ success: false, error: String(err) }));
+      return true;
+    }
+
+    if (msg.type === "MRBB_OPEN_SHORTCUTS_PAGE") {
+      chrome.tabs
+        .create({ url: "chrome://extensions/shortcuts" })
+        .then(() => sendResponse({ success: true }))
+        .catch((err) => sendResponse({ success: false, error: String(err) }));
+      return true;
+    }
+
     if (msg.type === "MRBB_OPEN_TAB") {
       chrome.tabs
         .create({ url: msg.url })
@@ -309,11 +351,27 @@
   // （Ctrl+Shift+B は Chrome 本体のネイティブバー切替に取られるため使えない）
   if (chrome.commands) {
     chrome.commands.onCommand.addListener(async (command) => {
-      if (command !== "toggle-bar") return;
-      const data = await chrome.storage.sync.get(STORAGE_KEY);
-      const settings = { ...DEFAULT_SETTINGS, ...(data[STORAGE_KEY] ?? {}) };
-      settings.enabled = !settings.enabled;
-      await chrome.storage.sync.set({ [STORAGE_KEY]: settings });
+      if (command === "toggle-bar") {
+        const data = await chrome.storage.sync.get(STORAGE_KEY);
+        const settings = { ...DEFAULT_SETTINGS, ...(data[STORAGE_KEY] ?? {}) };
+        settings.enabled = !settings.enabled;
+        await chrome.storage.sync.set({ [STORAGE_KEY]: settings });
+        return;
+      }
+      // Alt+1 等: 割り当てたブックマークを新しいタブで開く
+      const m = command.match(/^open-bookmark-([1-9])$/);
+      if (!m) return;
+      const data = await chrome.storage.sync.get(SHORTCUTS_KEY);
+      const slot = (data[SHORTCUTS_KEY] || {})[m[1]];
+      if (!slot) return;
+      let url = slot.url;
+      if (slot.id) {
+        try {
+          const nodes = await chrome.bookmarks.get(slot.id);
+          if (nodes && nodes[0] && nodes[0].url) url = nodes[0].url;
+        } catch (e) { /* ブックマーク削除済み → 割当時に保存した URL で開く */ }
+      }
+      if (url) chrome.tabs.create({ url });
     });
   }
 })();

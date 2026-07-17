@@ -627,9 +627,55 @@
     return div;
   }
 
+  // ショートカットスロット選択メニュー（ブックマーク右クリック → 割り当て）
+  function openShortcutSlotMenu(x, y, bm) {
+    chrome.runtime.sendMessage({ type: "MRBB_SHORTCUTS_INFO" }, function (resp) {
+      if (!resp) return;
+      var slots = resp.slots || {}, keys = resp.keys || {};
+      var assignedSlot = null;
+      for (var i = 1; i <= 9; i++) {
+        if (slots[String(i)] && slots[String(i)].id === bm.id) assignedSlot = i;
+      }
+      var menu = document.createElement("div");
+      menu.className = "mrbb-context-menu";
+      var makeSlotItem = function (n) {
+        var key = keys["open-bookmark-" + n] || t("scNoKey");
+        var cur = slots[String(n)];
+        var occupant = cur ? (cur.title || cur.url || "").slice(0, 24) : t("scEmpty");
+        var label = (assignedSlot === n ? "✓ " : "") + key + " — " + occupant;
+        return createMenuItem(label, function () {
+          // ✓ 済みスロットをもう一度選ぶと解除
+          chrome.runtime.sendMessage({
+            type: "MRBB_SHORTCUT_SET",
+            slot: n,
+            bookmark: assignedSlot === n ? null : { id: bm.id, title: bm.title, url: bm.url },
+          });
+        });
+      };
+      for (var n = 1; n <= 9; n++) menu.appendChild(makeSlotItem(n));
+      menu.appendChild(createMenuSeparator());
+      menu.appendChild(createMenuItem(t("scOpenSettings"), function () {
+        chrome.runtime.sendMessage({ type: "MRBB_OPEN_SHORTCUTS_PAGE" });
+      }));
+      showContextMenu(x, y, menu);
+    });
+  }
+
   function addItemActions(menu, id, isFolder, title, url, parentId) {
     if (!isFolder && url && url !== "#") {
       menu.appendChild(createMenuItem(t("openInNewTab"), function () { chrome.runtime.sendMessage({ type: "MRBB_OPEN_TAB", url: url }); }));
+      // ショートカット割当はサブメニューを開くため、親メニューを閉じる document の
+      // click(capture) が処理された後に開く必要がある → mousedown ではなく click で処理
+      var sc = document.createElement("div");
+      sc.className = "mrbb-context-item";
+      sc.textContent = t("assignShortcut");
+      sc.addEventListener("mousedown", function (e) { e.preventDefault(); e.stopPropagation(); });
+      sc.addEventListener("click", function (e) {
+        e.preventDefault(); e.stopPropagation();
+        closeContextMenu();
+        openShortcutSlotMenu(e.clientX, e.clientY, { id: id, title: title, url: url });
+      });
+      menu.appendChild(sc);
       menu.appendChild(createMenuSeparator());
     }
     if (isFolder) {
