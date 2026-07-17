@@ -373,7 +373,14 @@
           if (nodes && nodes[0] && nodes[0].url) url = nodes[0].url;
         } catch (e) { /* ブックマーク削除済み → 割当時に保存した URL で開く */ }
       }
-      if (url) chrome.tabs.create({ url });
+      if (url) {
+        const tab = await chrome.tabs.create({ url });
+        // グローバルショートカット（他アプリがアクティブな状態）から呼ばれた場合に
+        // Chrome のウィンドウを前面に出す。通常時は既に前面なので無害
+        if (tab && tab.windowId !== undefined) {
+          chrome.windows.update(tab.windowId, { focused: true }).catch(() => {});
+        }
+      }
     });
   }
 })();
