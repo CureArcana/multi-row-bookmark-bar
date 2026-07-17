@@ -464,6 +464,15 @@
 
     container.addEventListener("dragover", function (e) {
       e.preventDefault();
+      // ネイティブバーのフォルダのドラッグは dataTransfer.types が空
+      // （Chrome はフォルダのドラッグ情報をページに渡さないため受け入れ不可能）
+      // → NG カーソルを出して「ここには置けない」ことを明示する
+      if (!dragId && (!e.dataTransfer.types || e.dataTransfer.types.length === 0)) {
+        e.dataTransfer.dropEffect = "none";
+        removeIndicator();
+        clearFolderHighlight();
+        return;
+      }
       e.dataTransfer.dropEffect = "move";
       var rows = container.querySelectorAll(".mrbb-row");
       var targetRow = null;
@@ -569,6 +578,13 @@
   function setupDropdownDragDrop(dropdown, parentId) {
     dropdown.addEventListener("dragover", function (e) {
       e.preventDefault(); e.stopPropagation();
+      // ネイティブバーのフォルダのドラッグ（types が空）は受け入れ不可 → NG カーソル
+      if (!dragId && (!e.dataTransfer.types || e.dataTransfer.types.length === 0)) {
+        e.dataTransfer.dropEffect = "none";
+        removeIndicator();
+        clearFolderHighlight();
+        return;
+      }
       e.dataTransfer.dropEffect = "move";
       var rows = Array.from(dropdown.querySelectorAll(".mrbb-dropdown-row:not(.mrbb-dragging)"));
       var ind = getDropIndicator();
