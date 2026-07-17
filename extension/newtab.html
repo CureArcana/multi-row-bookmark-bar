@@ -43,15 +43,39 @@
       position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
       pointer-events: none; fill: #9aa0a6;
     }
+    /* 初回のみ表示する案内カード（Chrome の「変更を保持/元に戻す」確認の説明） */
+    #notice {
+      display: none;
+      max-width: 580px; width: 100%;
+      margin-bottom: 28px; padding: 14px 18px;
+      background: #e8f0fe; border: 1px solid #c2d7f8; border-radius: 12px;
+      font-size: 13px; line-height: 1.7; color: #1f1f1f;
+    }
+    #notice.show { display: block; }
+    #notice b { color: #0b57d0; }
+    #notice-ok {
+      display: block; margin: 10px 0 0 auto; padding: 6px 20px;
+      background: #0b57d0; color: #fff; border: none; border-radius: 16px;
+      font-size: 13px; font-family: inherit; cursor: pointer;
+    }
+    #notice-ok:hover { background: #0842a0; }
     @media (prefers-color-scheme: dark) {
       body { background: #202124; color: #e8eaed; }
       #q { background: #303134; border-color: #5f6368; color: #e8eaed; }
       #q:hover, #q:focus { box-shadow: 0 1px 6px rgba(0,0,0,0.5); border-color: transparent; }
+      #notice { background: #1f3350; border-color: #33507c; color: #e8eaed; }
+      #notice b { color: #a8c7fa; }
+      #notice-ok { background: #a8c7fa; color: #202124; }
+      #notice-ok:hover { background: #c4d9fb; }
     }
   </style>
 </head>
 <body>
   <div id="wrap">
+    <div id="notice">
+      <span id="notice-text"></span>
+      <button id="notice-ok">OK</button>
+    </div>
     <h1 id="logo"><span>G</span><span>o</span><span>o</span><span>g</span><span>l</span><span>e</span></h1>
     <form id="sf" action="https://www.google.com/search" method="GET">
       <div class="searchbox">

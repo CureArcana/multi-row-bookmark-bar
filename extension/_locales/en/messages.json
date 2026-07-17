@@ -212,6 +212,9 @@
   "ntpModeDesc": {
     "message": "Custom shows the multi-row bar on new tabs"
   },
+  "ntpNotice": {
+    "message": "Chrome will ask once whether to keep the new tab change. Choose \"Keep it\" to continue using this page — \"Restore settings\" disables the extension. You can switch back to Chrome's default new tab anytime via the extension icon → Settings → New tab page."
+  },
   "ntpCustom": {
     "message": "Custom with bar"
   },

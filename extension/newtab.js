@@ -29,4 +29,19 @@
   document.title = t("newTabTitle") || "New Tab";
   document.body.classList.add("ready");
   q.focus();
+
+  // 初回のみ: Chrome が出す「変更を保持 / 元に戻す」確認バブルの説明カードを表示。
+  // バブル自体は Chrome の機能で拡張からは消せないため、選び方をその場で案内する
+  try {
+    const NOTICE_KEY = "mrbb-ntp-notice-done";
+    const local = await chrome.storage.local.get(NOTICE_KEY);
+    if (!local[NOTICE_KEY]) {
+      document.getElementById("notice-text").textContent = t("ntpNotice");
+      document.getElementById("notice").classList.add("show");
+      document.getElementById("notice-ok").addEventListener("click", async () => {
+        document.getElementById("notice").classList.remove("show");
+        await chrome.storage.local.set({ [NOTICE_KEY]: true });
+      });
+    }
+  } catch (e) { /* storage が使えない環境では案内なしで続行 */ }
 })();
