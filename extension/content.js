@@ -1167,7 +1167,17 @@
   }
   function scheduleHide() {
     clearTimeout(autohideTimer);
-    autohideTimer = setTimeout(hideBar, settings.autohideDelayMs !== undefined ? settings.autohideDelayMs : 400);
+    var delay = settings.autohideDelayMs !== undefined ? settings.autohideDelayMs : 400;
+    var attempt = function () {
+      autohideTimer = null;
+      hideBar();
+      // ドロップダウン等の操作中で隠せなかった場合はリトライする。
+      // タイマー ID を null に戻さず放置すると mousemove 側の !autohideTimer 判定が
+      // 永遠に成立せず、二度と隠れなくなる。またカーソルがウィンドウ外に出ていると
+      // mousemove での再スケジュール自体が起きないため、ここで自前で再試行する
+      if (barShown) autohideTimer = setTimeout(attempt, Math.max(200, delay));
+    };
+    autohideTimer = setTimeout(attempt, delay);
   }
   function cancelHide() { clearTimeout(autohideTimer); autohideTimer = null; }
   function cancelReveal() { if (revealTimer) { clearTimeout(revealTimer); revealTimer = null; } }
@@ -1202,6 +1212,14 @@
         if (barShown && e.clientY > barBottom && !autohideTimer) scheduleHide();
         else if (barShown && e.clientY <= barBottom) cancelHide();
       }
+    }, true);
+    // カーソルがウィンドウ外（別モニタ・ブラウザUI等）へ出たら隠す判定を開始。
+    // 横方向に出ると mousemove が発火しなくなり Y 座標判定だけでは検知できない
+    document.addEventListener("mouseout", function (e) {
+      if (!isAutohide() || !hostEl || !barShown) return;
+      if (e.relatedTarget) return; // relatedTarget があればウィンドウ内の移動
+      cancelReveal();
+      scheduleHide();
     }, true);
     // ドラッグ中も上端で出す（バー間D&D用）。ページ側へ離れたら隠す
     document.addEventListener("dragover", function (e) {
