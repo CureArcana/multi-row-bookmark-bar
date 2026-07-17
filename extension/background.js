@@ -71,29 +71,46 @@
     }
   });
 
+  // ツールバーのアイコンクリックで使い方/設定ページを開く
+  // （manifest に default_popup が無い場合のみ onClicked が発火する）
+  chrome.action.onClicked.addListener(() => {
+    chrome.tabs.create({ url: chrome.runtime.getURL("howto.html") });
+  });
+
   // 拡張バーからのドラッグ中情報。ネイティブバーにドロップされると Chrome が
   // 「新規ブックマーク作成」として複製を作るので、それを検知して元を削除し
   // 「移動」の挙動にする
-  let pendingDrag = null; // { id, url, expires }
+  let pendingDrag = null; // { id, url?, isFolder?, folderTitle?, expires }
 
   chrome.bookmarks.onCreated.addListener((id, node) => {
-    if (
-      pendingDrag &&
-      Date.now() < pendingDrag.expires &&
-      node.url === pendingDrag.url &&
-      id !== pendingDrag.id
-    ) {
+    if (!pendingDrag || Date.now() >= pendingDrag.expires || id === pendingDrag.id) return;
+
+    if (pendingDrag.url && node.url === pendingDrag.url) {
+      // URL ブックマーク: ネイティブバーが複製を作った → 元を削除して「移動」にする
       const originalId = pendingDrag.id;
       pendingDrag = null;
       chrome.bookmarks.remove(originalId).catch(() => {});
+    } else if (pendingDrag.isFolder && node.url && node.parentId === "1") {
+      // フォルダ: ネイティブバーが壊れた URL ブックマークを作った →
+      // それを削除し、元フォルダをその位置に移動する
+      const originalId = pendingDrag.id;
+      const targetIndex = node.index;
+      pendingDrag = null;
+      (async () => {
+        await chrome.bookmarks.remove(id).catch(() => {});
+        await chrome.bookmarks.move(originalId, { parentId: "1", index: targetIndex }).catch(() => {});
+      })();
     }
   });
 
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.type === "MRBB_DRAG_START") {
-      pendingDrag = msg.url
-        ? { id: msg.id, url: msg.url, expires: Date.now() + 60000 }
-        : null;
+      if (msg.url) {
+        pendingDrag = { id: msg.id, url: msg.url, expires: Date.now() + 60000 };
+      } else {
+        // フォルダドラッグ
+        pendingDrag = { id: msg.id, isFolder: true, folderTitle: msg.folderTitle || "", expires: Date.now() + 60000 };
+      }
       sendResponse({ success: true });
       return false;
     }

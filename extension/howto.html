@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Multi-Row Bookmark Bar</title>
+  <style>
+    :root {
+      --bg: #f8f9fa;
+      --panel: #ffffff;
+      --text: #202124;
+      --text-sub: #5f6368;
+      --border: #e8eaed;
+      --accent: #1a73e8;
+      --accent-bg: #e8f0fe;
+      --warn-bg: #fef7e0;
+      --warn-border: #f9dda4;
+      --ok: #188038;
+      --ng: #d93025;
+      --code-bg: #f1f3f4;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #202124;
+        --panel: #292a2d;
+        --text: #e8eaed;
+        --text-sub: #9aa0a6;
+        --border: #3c4043;
+        --accent: #8ab4f8;
+        --accent-bg: #1f3350;
+        --warn-bg: #33301f;
+        --warn-border: #5c5330;
+        --ok: #81c995;
+        --ng: #f28b82;
+        --code-bg: #35363a;
+      }
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      font-size: 14px;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.7;
+    }
+    /* 言語切替: html[data-lang] に応じて片方だけ表示 */
+    html[data-lang="ja"] .l-en { display: none !important; }
+    html[data-lang="en"] .l-ja { display: none !important; }
+
+    .layout { display: flex; min-height: 100vh; }
+
+    .sidebar {
+      width: 280px;
+      flex-shrink: 0;
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 18px; }
+    .brand img { width: 36px; height: 36px; }
+    .brand-name { font-size: 14px; font-weight: 600; line-height: 1.3; }
+    .brand-ver { font-size: 12px; color: var(--text-sub); }
+    .nav-item {
+      display: block;
+      padding: 10px 14px;
+      border-radius: 8px;
+      color: var(--text);
+      text-decoration: none;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .nav-item:hover { background: var(--bg); }
+    .nav-item.active { background: var(--accent-bg); color: var(--accent); font-weight: 600; }
+    .sidebar-footer { margin-top: auto; padding: 8px; font-size: 12px; color: var(--text-sub); }
+    .sidebar-footer a { color: var(--accent); text-decoration: none; }
+
+    main { flex: 1; padding: 40px 48px; max-width: 780px; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    h1 { font-size: 26px; font-weight: 600; padding-bottom: 14px; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+    h2 { font-size: 18px; font-weight: 600; margin: 30px 0 10px; }
+    p { margin: 8px 0; }
+    ul { margin: 8px 0 8px 22px; }
+    li { margin: 4px 0; }
+    kbd {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-bottom-width: 2px;
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-size: 12px;
+      font-family: inherit;
+    }
+    code { background: var(--code-bg); border-radius: 4px; padding: 1px 5px; font-size: 13px; }
+    .note {
+      background: var(--warn-bg);
+      border: 1px solid var(--warn-border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin: 12px 0;
+    }
+    .ok { color: var(--ok); font-weight: 600; }
+    .ng { color: var(--ng); font-weight: 600; }
+
+    /* 設定フォーム */
+    .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .setting-label { font-size: 14px; }
+    .setting-desc { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
+    .setting-row input[type="number"], .setting-row select {
+      width: 170px;
+      padding: 7px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--panel);
+      color: var(--text);
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+    .toggle { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle .slider {
+      position: absolute; inset: 0;
+      background: var(--border);
+      border-radius: 11px;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .toggle .slider::before {
+      content: "";
+      position: absolute;
+      width: 16px; height: 16px;
+      left: 3px; top: 3px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform .15s;
+    }
+    .toggle input:checked + .slider { background: var(--accent); }
+    .toggle input:checked + .slider::before { transform: translateX(18px); }
+
+    .btn {
+      display: inline-block;
+      padding: 9px 18px;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #fff;
+      text-decoration: none;
+      font-size: 14px;
+      margin-top: 8px;
+    }
+    @media (prefers-color-scheme: dark) { .btn { color: #202124; } }
+
+    @media (max-width: 720px) {
+      .layout { flex-direction: column; }
+      .sidebar { width: 100%; height: auto; position: static; flex-direction: row; flex-wrap: wrap; align-items: center; }
+      .brand { padding-bottom: 4px; }
+      main { padding: 24px 20px; }
+    }
+  </style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand">
+      <img src="icons/icon48.png" alt="">
+      <div>
+        <div class="brand-name">Multi-Row Bookmark Bar</div>
+        <div class="brand-ver"><span class="l-ja">バージョン </span><span class="l-en">Version </span><span id="ver"></span></div>
+      </div>
+    </div>
+    <a class="nav-item" data-nav="howto"><span class="l-ja">使い方</span><span class="l-en">How to use</span></a>
+    <a class="nav-item" data-nav="settings"><span class="l-ja">設定</span><span class="l-en">Settings</span></a>
+    <a class="nav-item" data-nav="contact"><span class="l-ja">お問い合わせ</span><span class="l-en">Contact</span></a>
+    <div class="sidebar-footer">
+      <a href="https://github.com/CureArcana/multi-row-bookmark-bar" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </aside>
+
+  <main>
+    <!-- ===== 使い方 ===== -->
+    <section class="panel" id="sec-howto">
+      <h1><span class="l-ja">使い方</span><span class="l-en">How to use</span></h1>
+
+      <div class="l-ja">
+        <p>Multi-Row Bookmark Bar は、Chrome のブックマークバーを複数段に拡張します。バーに入り切らないブックマークも、すべてページ上部に表示できます。</p>
+
+        <h2>基本操作</h2>
+        <ul>
+          <li>バー右端の <b>⚙</b> — 設定パネルを開く（このページの「設定」と同じ内容をその場で変更できます）</li>
+          <li>バー右端の <b>🔍</b> — ブックマークを検索</li>
+          <li><b>右クリック</b> — 名前の変更・URL編集・削除・並べ替え・フォルダ作成など</li>
+          <li><kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> — バーの表示/非表示を切り替え</li>
+        </ul>
+
+        <h2>バーモード</h2>
+        <ul>
+          <li><b>隠れた分のみ</b> — Chrome標準バーに入り切らないブックマークだけを、続きとして表示します。</li>
+          <li><b>すべてのブックマーク</b> — 全ブックマークを拡張バーに表示します。<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> で標準バーを非表示にすると、すべての操作が拡張バー内で完結するのでおすすめです。</li>
+        </ul>
+
+        <h2>表示方法</h2>
+        <ul>
+          <li><b>自動非表示</b> — 普段は隠れ、マウスを画面上端に近づけると表示されます。ページのレイアウトに影響しません。</li>
+          <li><b>ページを押し下げ</b> — 常に表示し、ページを下にずらします。</li>
+        </ul>
+
+        <h2>ドラッグ&amp;ドロップ</h2>
+        <p><span class="ok">✓ できること</span></p>
+        <ul>
+          <li>拡張バー内での並べ替え</li>
+          <li>アイテムをフォルダの中央にドロップしてフォルダへ移動</li>
+          <li>ページ上のリンクをバーへドラッグしてブックマークに追加</li>
+          <li>拡張バーから Chrome標準バーへの移動（ブックマーク・フォルダとも）</li>
+        </ul>
+        <p><span class="ng">✗ できないこと</span></p>
+        <ul>
+          <li>Chrome標準バーから拡張バーへの<b>フォルダ</b>の移動</li>
+        </ul>
+        <div class="note">
+          Chrome はセキュリティ上の理由から、フォルダのドラッグ情報をページ側に渡しません。そのため、どの拡張機能でもこの操作は実装できません（URLブックマークは移動できます）。<br>
+          <b>回避策:</b> バーモードを「すべてのブックマーク」にするか、ブックマークマネージャ（<code>chrome://bookmarks</code>）で移動してください。
+        </div>
+
+        <h2>新しいタブ</h2>
+        <ul>
+          <li><b>カスタム</b> — 新しいタブにも拡張バーを表示します。</li>
+          <li><b>Chrome標準</b> — 従来の新しいタブページを使います。</li>
+        </ul>
+
+        <h2>うまく表示されないとき</h2>
+        <ul>
+          <li><code>chrome://</code> ページや Chrome ウェブストアなど、拡張機能が動作できないページではバーは表示されません。</li>
+          <li>「隠れた分のみ」モードで開始位置がずれる場合は、設定の「境界調整」で補正できます。</li>
+        </ul>
+      </div>
+
+      <div class="l-en">
+        <p>Multi-Row Bookmark Bar extends Chrome's bookmark bar to multiple rows, so every bookmark stays visible at the top of the page.</p>
+
+        <h2>Basics</h2>
+        <ul>
+          <li><b>⚙</b> at the right end of the bar — open the settings panel (same options as the Settings page here)</li>
+          <li><b>🔍</b> at the right end — search bookmarks</li>
+          <li><b>Right-click</b> — rename, edit URL, delete, sort, create folders, and more</li>
+          <li><kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> — toggle the bar</li>
+        </ul>
+
+        <h2>Bar mode</h2>
+        <ul>
+          <li><b>Overflow only</b> — shows only the bookmarks that don't fit in Chrome's native bar, as a continuation.</li>
+          <li><b>All bookmarks</b> — renders everything in the extension bar. Hide the native bar with <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> and everything lives in one place — recommended.</li>
+        </ul>
+
+        <h2>Display</h2>
+        <ul>
+          <li><b>Auto-hide</b> — hidden by default; move the cursor to the top edge to reveal. Never alters page layout.</li>
+          <li><b>Push page down</b> — always visible, shifting the page down.</li>
+        </ul>
+
+        <h2>Drag &amp; drop</h2>
+        <p><span class="ok">✓ Supported</span></p>
+        <ul>
+          <li>Reordering within the extension bar</li>
+          <li>Dropping an item onto the middle of a folder to move it inside</li>
+          <li>Dragging links from a page onto the bar to bookmark them</li>
+          <li>Moving items from the extension bar to Chrome's native bar (bookmarks and folders)</li>
+        </ul>
+        <p><span class="ng">✗ Not supported</span></p>
+        <ul>
+          <li>Moving a <b>folder</b> from Chrome's native bar into the extension bar</li>
+        </ul>
+        <div class="note">
+          For security reasons Chrome does not expose folder drag data to web pages, so no extension can implement this (URL bookmarks work fine).<br>
+          <b>Workaround:</b> switch the bar mode to "All bookmarks", or move folders in the Bookmark Manager (<code>chrome://bookmarks</code>).
+        </div>
+
+        <h2>New tab</h2>
+        <ul>
+          <li><b>Custom</b> — shows the extension bar on new tabs too.</li>
+          <li><b>Chrome default</b> — keeps the standard new tab page.</li>
+        </ul>
+
+        <h2>Troubleshooting</h2>
+        <ul>
+          <li>The bar cannot appear on pages where extensions are not allowed to run, such as <code>chrome://</code> pages and the Chrome Web Store.</li>
+          <li>If the starting position drifts in Overflow mode, correct it with "Boundary offset" in Settings.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ===== 設定 ===== -->
+    <section class="panel" id="sec-settings">
+      <h1><span class="l-ja">設定</span><span class="l-en">Settings</span></h1>
+
+      <div class="setting-row">
+        <div><div class="setting-label" data-i18n="enabled">Enabled</div></div>
+        <div class="toggle"><input type="checkbox" id="enabled" checked><span class="slider"></span></div>
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label" data-i18n="language">Language</div></div>
+        <select id="language">
+          <option value="auto" data-i18n="langAuto">Match browser</option>
+          <option value="en">English</option>
+          <option value="ja">日本語</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-label" data-i18n="fontSizeUnit">Font size (px)</div>
+          <div class="setting-desc" data-i18n="range820">8 - 20</div>
+        </div>
+        <input type="number" id="fontSize" value="12" min="8" max="20">
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-label" data-i18n="rowHeightUnit">Row height (px)</div>
+          <div class="setting-desc" data-i18n="range2060">20 - 60</div>
+        </div>
+        <input type="number" id="barHeight" value="36" min="20" max="60">
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-label" data-i18n="maxRowsShort">Max rows</div>
+          <div class="setting-desc" data-i18n="maxRowsDesc">0 = unlimited</div>
+        </div>
+        <input type="number" id="maxRows" value="0" min="0" max="10">
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-label" data-i18n="ntpMode">New tab page</div>
+          <div class="setting-desc" data-i18n="ntpModeDesc">Custom shows the multi-row bar on new tabs</div>
+        </div>
+        <select id="ntpMode">
+          <option value="custom" data-i18n="ntpCustom">Custom with bar</option>
+          <option value="default" data-i18n="ntpDefault">Chrome default</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-label" data-i18n="displayBehavior">Display</div>
+          <div class="setting-desc" data-i18n="displayBehaviorDesc">Auto-hide never alters page layout</div>
+        </div>
+        <select id="displayBehavior">
+          <option value="autohide" data-i18n="autohideOption">Auto-hide overlay</option>
+          <option value="push" data-i18n="pushOption">Push page down</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-label" data-i18n="revealEdge">Reveal area height (px)</div>
+          <div class="setting-desc" data-i18n="revealEdgeDesc">Show when cursor is within N px of the top (1 - 50)</div>
+        </div>
+        <input type="number" id="revealEdgePx" value="2" min="1" max="50" step="1">
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-label" data-i18n="revealDelay">Reveal delay (ms)</div>
+          <div class="setting-desc" data-i18n="revealDelayDesc">0 - 1000</div>
+        </div>
+        <input type="number" id="revealDelayMs" value="0" min="0" max="1000" step="50">
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-label" data-i18n="autohideDelay">Hide delay (ms)</div>
+          <div class="setting-desc" data-i18n="autohideDelayDesc">After leaving the bar area (100 - 5000)</div>
+        </div>
+        <input type="number" id="autohideDelayMs" value="400" min="100" max="5000" step="100">
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label" data-i18n="hideOnClick">Hide after opening a bookmark</div></div>
+        <div class="toggle"><input type="checkbox" id="hideOnClick" checked><span class="slider"></span></div>
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label" data-i18n="hideOnOutsideClick">Hide when clicking outside</div></div>
+        <div class="toggle"><input type="checkbox" id="hideOnOutsideClick" checked><span class="slider"></span></div>
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-label" data-i18n="barMode">Bar mode</div>
+          <div class="setting-desc" data-i18n="barModeDesc">Overflow = continue from hidden bookmarks</div>
+        </div>
+        <select id="barMode">
+          <option value="overflow" data-i18n="overflowOnly">Overflow only</option>
+          <option value="independent" data-i18n="allBookmarks">All bookmarks</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-label" data-i18n="boundaryAdjust">Boundary offset</div>
+          <div class="setting-desc" data-i18n="boundaryOffsetDesc">Shift start position (- = earlier)</div>
+        </div>
+        <input type="number" id="boundaryOffset" value="0" min="-600" max="600" step="10">
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label" data-i18n="displayMode">Display mode</div></div>
+        <select id="displayMode">
+          <option value="both" data-i18n="iconText">Icon + Text</option>
+          <option value="icon_only" data-i18n="iconOnly">Icon only</option>
+          <option value="text_only" data-i18n="textOnly">Text only</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label" data-i18n="folderOpen">Folder open</div></div>
+        <select id="folderOpenMode">
+          <option value="hover" data-i18n="hover">Hover</option>
+          <option value="click" data-i18n="click">Click</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-label" data-i18n="hoverCloseDelay">Folder close delay</div>
+          <div class="setting-desc" data-i18n="hoverCloseDelayDesc">ms until a hovered folder closes (100 - 2000)</div>
+        </div>
+        <input type="number" id="hoverCloseMs" value="400" min="100" max="2000" step="100">
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label" data-i18n="showCondition">Show condition</div></div>
+        <select id="showCondition">
+          <option value="always" data-i18n="always">Always</option>
+          <option value="new_tab_only" data-i18n="newTabOnly">New tab only</option>
+        </select>
+      </div>
+      <p class="setting-desc" style="margin-top:14px;">
+        <span class="l-ja">変更は自動保存され、開いているタブに即時反映されます。</span>
+        <span class="l-en">Changes are saved automatically and applied to open tabs immediately.</span>
+      </p>
+    </section>
+
+    <!-- ===== お問い合わせ ===== -->
+    <section class="panel" id="sec-contact">
+      <h1><span class="l-ja">お問い合わせ</span><span class="l-en">Contact</span></h1>
+      <div class="l-ja">
+        <p>不具合の報告や機能のご要望は、GitHub の Issues にお寄せください。</p>
+      </div>
+      <div class="l-en">
+        <p>Report bugs or request features on GitHub Issues.</p>
+      </div>
+      <a class="btn" href="https://github.com/CureArcana/multi-row-bookmark-bar/issues" target="_blank" rel="noopener">GitHub Issues</a>
+    </section>
+  </main>
+</div>
+<script src="howto.js"></script>
+</body>
+</html>

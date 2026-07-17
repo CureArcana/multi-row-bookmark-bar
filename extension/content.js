@@ -31,18 +31,28 @@
   };
 
   // Chrome ネイティブバーの寸法モデル
-  // (Chrome 150 実測: 幅900/1100/1280px での表示個数と canvas 計測テキスト幅から逆算。
-  //  アイテム幅 = テキスト幅 + itemPad*2 + iconSize + iconTextGap + itemSpacing = テキスト + 40)
+  // (Chromium 本家 bookmark_bar_view.cc / layout_constants.cc /
+  //  bookmark_button_util.h の実装から転記。非タッチ UI の値)
   var NATIVE = {
-    fontSize: 12,     // Chrome UI フォントサイズ（設定に依存しない固定値）
-    itemPad: 8,       // アイテム左右パディング
-    iconTextGap: 6,   // ファビコンとラベルの間隔
+    fontSize: 12,        // Chrome UI フォントサイズ（Windows 100% 時）
+    inset: 6,            // ボタン左右 inset (INSETS_BOOKMARKS_BAR_BUTTON)
+    iconSize: 16,        // ファビコン / フォルダアイコン
+    imageLabelGap: 6,    // kBookmarkBarButtonImageLabelPadding
+    buttonPadding: 4,    // kBookmarkBarButtonPadding（ボタン間。fit 判定にも含まれる）
+    maxButtonWidth: 150, // kMaxButtonWidth（テキストでなくボタン全体の上限）
+    leadingMargin: 6,    // GetLeadingMargin()
+    trailingMargin: 8,   // kBookmarkBarTrailingMargin
+    chevron: 28,         // >> ボタン = inset6 + icon16 + inset6（常に幅が予約される）
+    separator: 18        // ButtonSeparatorView = 8 + 2 + 8
+  };
+
+  // 拡張バー側アイテムの寸法モデル（content.css の描画と一致させる）
+  var EXT = {
+    itemPad: 8,
+    iconTextGap: 6,
     iconSize: 16,
-    itemSpacing: 2,   // アイテム間の間隔
-    textMaxWidth: 150,
-    leftMargin: 22,   // バー左端の余白
-    rightMargin: 8,   // バー右端の余白（シェブロン非表示時）
-    chevron: 33       // >> オーバーフローシェブロン + 右余白
+    itemSpacing: 2,
+    textMaxWidth: 150
   };
 
   // ブラウザ内蔵の favicon キャッシュ (_favicon API) を使う。
@@ -100,14 +110,15 @@
     var ctx = canvasEl.getContext("2d");
     // Yu Gothic UI: Chrome UI が日本語で使うフォールバック。ネイティブバーの実描画と揃える
     ctx.font = fontSize + 'px "Segoe UI", "Yu Gothic UI", Meiryo, system-ui, -apple-system, sans-serif';
-    return Math.min(ctx.measureText(text).width, maxWidth || NATIVE.textMaxWidth);
+    return maxWidth ? Math.min(ctx.measureText(text).width, maxWidth) : ctx.measureText(text).width;
   }
 
-  function otherBookmarksLabelWidth() {
+  // 「すべてのブックマーク」ボタンの幅（フォルダアイコン付き LabelButton）
+  function allBookmarksButtonWidth() {
     var lang = (chrome.i18n && chrome.i18n.getUILanguage) ? chrome.i18n.getUILanguage() : "en";
-    var label = lang.indexOf("ja") === 0 ? "その他のブックマーク" : "All Bookmarks";
-    return NATIVE.itemPad * 2 + NATIVE.iconSize + NATIVE.iconTextGap + NATIVE.itemSpacing +
-      getTextWidth(label, NATIVE.fontSize) + 8; // +8: ボタン手前のセパレータ余白
+    var label = lang.indexOf("ja") === 0 ? "すべてのブックマーク" : "All Bookmarks";
+    return Math.ceil(NATIVE.inset * 2 + NATIVE.iconSize + NATIVE.imageLabelGap +
+      getTextWidth(label, NATIVE.fontSize));
   }
 
   // 保存済みタブグループのチップがネイティブバー左側に表示され、幅を消費する
@@ -192,20 +203,21 @@
   }
 
   // ===== Layout Calculation =====
-  // ネイティブバー上のアイテム幅（Chrome の実描画を模倣）
+  // ネイティブバー上のボタン幅（Chromium LabelButton の算出を再現:
+  // inset + icon + (gap + text) + inset、ボタン全体を kMaxButtonWidth でクリップ）
   function calcNativeItemWidth(item) {
-    var w = NATIVE.itemPad * 2 + NATIVE.iconSize + NATIVE.itemSpacing;
-    if (item.title) w += NATIVE.iconTextGap + getTextWidth(item.title, NATIVE.fontSize);
-    return Math.ceil(w);
+    var w = NATIVE.inset * 2 + NATIVE.iconSize;
+    if (item.title) w += NATIVE.imageLabelGap + getTextWidth(item.title, NATIVE.fontSize);
+    return Math.min(Math.ceil(w), NATIVE.maxButtonWidth);
   }
 
-  // 拡張バー上のアイテム幅（CSS と同じ寸法モデル: pad/gap/spacing はネイティブと同一）
+  // 拡張バー上のアイテム幅（content.css と同じ寸法モデル）
   function calcItemWidth(item, displayMode, fontSize) {
-    var w = NATIVE.itemPad * 2 + NATIVE.itemSpacing;
-    if (displayMode !== "text_only") w += NATIVE.iconSize;
+    var w = EXT.itemPad * 2 + EXT.itemSpacing;
+    if (displayMode !== "text_only") w += EXT.iconSize;
     if (displayMode !== "icon_only" && item.title) {
-      if (displayMode !== "text_only") w += NATIVE.iconTextGap;
-      w += getTextWidth(item.title, fontSize);
+      if (displayMode !== "text_only") w += EXT.iconTextGap;
+      w += getTextWidth(item.title, fontSize, EXT.textMaxWidth);
     }
     return Math.ceil(w);
   }
@@ -217,31 +229,42 @@
     var gearW = 24, searchW = 24;
     var extAvail = windowWidth - 16; // BAR_MARGIN_X * 2
 
-    // ネイティブバーの幅を消費する要素をすべて差し引く。
-    // boundaryOffsetPx は環境差（Chrome UIフォント設定・アプリショートカット・
-    // 未検出のチップ等）の手動補正。px 保存なので並べ替えに対して安定
-    var reserved = NATIVE.leftMargin + NATIVE.rightMargin +
-      tabGroupChipsWidth() +
-      (hasOtherBookmarks ? otherBookmarksLabelWidth() : 0) +
-      (sett.boundaryOffsetPx || 0);
-    var nativeFull = windowWidth - reserved;
+    // Chromium bookmark_bar_view.cc の Layout() を再現する:
+    //   x     = leadingMargin + タブグループチップ
+    //   max_x = 窓幅 - trailingMargin - チェブロン - セパレータ
+    //           - (「すべてのブックマーク」表示中はそのボタン幅 + buttonPadding)
+    //   各ボタン: next_x = x + 幅 + buttonPadding が max_x 未満なら表示
+    //   ※チェブロン幅はオーバーフローの有無に関わらず常に予約される
     var nativeWidths = bookmarks.map(calcNativeItemWidth);
-    var total = nativeWidths.reduce(function (a, b) { return a + b; }, 0);
+    var startX = NATIVE.leadingMargin + tabGroupChipsWidth();
+    var maxXBase = windowWidth - NATIVE.trailingMargin - NATIVE.chevron - NATIVE.separator;
+    if (hasOtherBookmarks) maxXBase -= allBookmarksButtonWidth() + NATIVE.buttonPadding;
 
-    // row 0（ネイティブバー）の収容数 k を決める
-    var k;
-    if (total <= nativeFull) {
-      k = bookmarks.length; // 全部収まる（シェブロン非表示）
-    } else {
-      var nativeAvail = nativeFull + NATIVE.rightMargin - NATIVE.chevron;
-      k = 0;
-      var used = 0;
-      while (k < bookmarks.length && (used === 0 || used + nativeWidths[k] <= nativeAvail)) {
-        used += nativeWidths[k];
-        k++;
+    // max_x までに収まる row 0（ネイティブバー）の個数 k と使用幅を返す
+    function fitK(maxX) {
+      var kk = 0, xx = startX;
+      while (kk < bookmarks.length) {
+        var nx = xx + nativeWidths[kk] + NATIVE.buttonPadding;
+        if (nx >= maxX) break; // Chromium は next_x < max_x (strict) で判定
+        xx = nx;
+        kk++;
       }
+      return { k: kk, used: xx - startX };
     }
-    lastOverflowInfo = { k: k, widths: nativeWidths, n: bookmarks.length };
+
+    // boundaryOffsetPx は環境差（Chrome UIフォント設定・OS スケール等）の手動補正。
+    // 誤差はアイテムごとのテキスト幅計測のズレの蓄積が主因なので、
+    // キャリブレーション時のバー使用幅(boundaryCalibUsed)との比で自動スケール
+    // させ、ブックマークの並べ替え・増減後も補正が追従するようにする
+    var base = fitK(maxXBase);
+    var offset = sett.boundaryOffsetPx || 0;
+    if (offset && sett.boundaryCalibUsed > 0 && base.used > 0) {
+      var ratio = Math.max(0.25, Math.min(4, base.used / sett.boundaryCalibUsed));
+      offset = Math.round(offset * ratio);
+    }
+    var fit = fitK(maxXBase - offset);
+    var k = fit.k;
+    lastOverflowInfo = { k: k, widths: nativeWidths, n: bookmarks.length, usedNoOffset: base.used, effectiveOffset: offset };
     if (k >= bookmarks.length) return []; // オーバーフロー無し → 拡張バー不要
 
     var result = [];
@@ -333,40 +356,36 @@
   function isDragging() { return dragId !== null; }
   function setExternalDragId(id) { dragId = id; }
 
-  // ネイティブバーやページからのドラッグ（URL 付き）を受け入れるか
-  function hasUriData(dt) {
-    try {
-      for (var i = 0; i < dt.types.length; i++) {
-        if (dt.types[i] === "text/uri-list" || dt.types[i] === "text/plain") return true;
-      }
-    } catch (e) { /* ignore */ }
-    return false;
-  }
-
   // ドラッグ開始をバックグラウンドに通知（ネイティブバーへのドロップで
   // Chrome が複製を作った時に、元を消して「移動」にするため）
-  function notifyDragStart(id, url) {
-    try { chrome.runtime.sendMessage({ type: "MRBB_DRAG_START", id: id, url: url || null }); } catch (e) { /* ignore */ }
+  function notifyDragStart(id, url, folderTitle) {
+    try { chrome.runtime.sendMessage({ type: "MRBB_DRAG_START", id: id, url: url || null, folderTitle: folderTitle || null }); } catch (e) { /* ignore */ }
   }
   function notifyDragEnd() {
     try { chrome.runtime.sendMessage({ type: "MRBB_DRAG_END" }); } catch (e) { /* ignore */ }
   }
 
-  // 外部ドラッグ（ネイティブバー / ページ上のリンク）のドロップ処理
+  // 外部ドラッグ（ネイティブバー / ページ上のリンク）のドロップ処理。
+  // URL を伴うドロップのみ受け付ける。ネイティブバーのフォルダは Chrome が
+  // dataTransfer を空（types が 0 件）で渡してくるため識別できない: フォルダは
+  // URL を持たず、Chrome 内部の chromium/x-bookmark-entries でしか運ばれず、
+  // この形式はウェブページに公開されない。URL 以外のテキストで代用しようとすると
+  // ページ上の任意の文字列をドラッグしただけで同名フォルダが移動してしまう。
   function executeExternalDrop(dt) {
     if (!dropTarget) { cleanupDrag(); return; }
     var uri = "";
     try { uri = dt.getData("text/uri-list") || dt.getData("text/plain") || ""; } catch (e) { /* ignore */ }
     var url = uri.split("\n")[0].trim();
-    if (!url || !/^https?:|^ftp:|^file:|^chrome:|^edge:|^about:/i.test(url)) { cleanupDrag(); return; }
-    var title = "";
-    try {
-      var html = dt.getData("text/html");
-      if (html) title = new DOMParser().parseFromString(html, "text/html").body.textContent.trim();
-    } catch (e) { /* ignore */ }
-    var dest = { parentId: dropTarget.parentId };
-    if (dropTarget.index !== undefined) dest.index = dropTarget.index;
-    chrome.runtime.sendMessage({ type: "MRBB_EXTERNAL_DROP", url: url, title: title, destination: dest });
+    if (url && /^https?:|^ftp:|^file:|^chrome:|^edge:|^about:/i.test(url)) {
+      var dest = { parentId: dropTarget.parentId };
+      if (dropTarget.index !== undefined) dest.index = dropTarget.index;
+      var title = "";
+      try {
+        var html = dt.getData("text/html");
+        if (html) title = new DOMParser().parseFromString(html, "text/html").body.textContent.trim();
+      } catch (e) { /* ignore */ }
+      chrome.runtime.sendMessage({ type: "MRBB_EXTERNAL_DROP", url: url, title: title, destination: dest });
+    }
     cleanupDrag();
   }
 
@@ -422,10 +441,14 @@
       if (href && href !== "#") {
         e.dataTransfer.setData("text/uri-list", href);
         e.dataTransfer.setData("text/plain", href);
+        notifyDragStart(dragId, href, null);
       } else {
-        e.dataTransfer.setData("text/plain", dragId);
+        // フォルダ: タイトルを渡す（dragId を渡すと Chrome が壊れたブックマークを作る）
+        var titleEl = item.querySelector(".mrbb-title");
+        var folderTitle = titleEl ? titleEl.textContent : "";
+        e.dataTransfer.setData("text/plain", folderTitle || dragId);
+        notifyDragStart(dragId, null, folderTitle);
       }
-      notifyDragStart(dragId, href && href !== "#" ? href : null);
       if (e.dataTransfer.setDragImage) {
         var clone = item.cloneNode(true);
         clone.style.opacity = "0.8";
@@ -440,7 +463,6 @@
 
     container.addEventListener("dragover", function (e) {
       e.preventDefault();
-      if (!dragId && !hasUriData(e.dataTransfer)) return;
       e.dataTransfer.dropEffect = "move";
       var rows = container.querySelectorAll(".mrbb-row");
       var targetRow = null;
@@ -454,7 +476,7 @@
       var beforeItem = null, insertX = 0;
       for (var i = 0; i < items.length; i++) {
         var ir = items[i].getBoundingClientRect();
-        if (items[i].classList.contains("mrbb-folder") && e.clientX >= ir.left + ir.width * 0.25 && e.clientX <= ir.left + ir.width * 0.75) {
+        if (items[i].classList.contains("mrbb-folder") && items[i].dataset.bmId !== dragId && e.clientX >= ir.left + ir.width * 0.25 && e.clientX <= ir.left + ir.width * 0.75) {
           clearFolderHighlight();
           items[i].classList.add("mrbb-folder-drop-target");
           folderDropTarget = items[i];
@@ -526,15 +548,14 @@
   function setupDropdownDragDrop(dropdown, parentId) {
     dropdown.addEventListener("dragover", function (e) {
       e.preventDefault(); e.stopPropagation();
-      if (!dragId && !hasUriData(e.dataTransfer)) return;
       e.dataTransfer.dropEffect = "move";
-      var rows = Array.from(dropdown.querySelectorAll(".mrbb-dropdown-row"));
+      var rows = Array.from(dropdown.querySelectorAll(".mrbb-dropdown-row:not(.mrbb-dragging)"));
       var ind = getDropIndicator();
       var before = null, insertY = 0;
       for (var i = 0; i < rows.length; i++) {
         var r = rows[i].getBoundingClientRect();
         var midY = r.top + r.height / 2;
-        if (rows[i].classList.contains("mrbb-dropdown-folder") && e.clientY >= r.top + r.height * 0.25 && e.clientY <= r.top + r.height * 0.75) {
+        if (rows[i].classList.contains("mrbb-dropdown-folder") && rows[i].dataset.bmId !== dragId && e.clientY >= r.top + r.height * 0.25 && e.clientY <= r.top + r.height * 0.75) {
           clearFolderHighlight();
           rows[i].classList.add("mrbb-folder-drop-target");
           folderDropTarget = rows[i];
@@ -711,7 +732,7 @@
     var onMove = function (e) {
       if (isDragging()) { if (timer) { clearTimeout(timer); timer = null; } return; }
       if (isInside(e.clientX, e.clientY)) { if (timer) { clearTimeout(timer); timer = null; } }
-      else if (!timer) { timer = setTimeout(function () { closeDropdown(true); }, timeout); }
+      else if (!timer) { timer = setTimeout(function () { closeDropdown(false); }, timeout); }
     };
     document.addEventListener("mousemove", onMove, true);
     var cancel = function () { if (timer) { clearTimeout(timer); timer = null; } };
@@ -780,16 +801,18 @@
     el.addEventListener("dragstart", function (e) {
       e.stopPropagation();
       setExternalDragId(item.id);
+      el.classList.add("mrbb-dragging");
       e.dataTransfer.effectAllowed = "all";
       if (item.url) {
         e.dataTransfer.setData("text/uri-list", item.url);
         e.dataTransfer.setData("text/plain", item.url);
+        notifyDragStart(item.id, item.url, null);
       } else {
-        e.dataTransfer.setData("text/plain", item.id);
+        e.dataTransfer.setData("text/plain", item.title || "");
+        notifyDragStart(item.id, null, item.title || "");
       }
-      notifyDragStart(item.id, item.url || null);
     });
-    el.addEventListener("dragend", function () { notifyDragEnd(); });
+    el.addEventListener("dragend", function () { cleanupDrag(); notifyDragEnd(); });
 
     if (item.isFolder) {
       el.classList.add("mrbb-dropdown-folder");
@@ -942,21 +965,25 @@
       var v = Math.min(60, (settings.barHeight || 36) + 2); settings.barHeight = v; saveSettings(); if (bhValEl) bhValEl.textContent = v + "px";
     });
     // ◀▶ は境界に今いるアイテムの実幅ぶんだけ px を増減する。
-    // 「1クリック = 1ブックマーク」の操作感のまま、保存値は px なので
-    // ブックマークを並べ替えても補正が安定する
+    // 「1クリック = 1ブックマーク」の操作感。調整時は描画に使われた実効補正値
+    // (effectiveOffset) を起点にし、その時点のバー使用幅をキャリブレーション
+    // 基準として保存 → 以後の並べ替え・増減には比率スケールで自動追従する
     var boValEl = panel.querySelector("#mrbb-bo-val");
     var updateBoLabel = function () { if (boValEl) boValEl.textContent = (settings.boundaryOffsetPx || 0) + "px"; };
+    var applyBoundaryStep = function (step) {
+      var info = lastOverflowInfo;
+      var current = (info && info.effectiveOffset !== undefined) ? info.effectiveOffset : (settings.boundaryOffsetPx || 0);
+      settings.boundaryOffsetPx = Math.max(-600, Math.min(600, current + step));
+      settings.boundaryCalibUsed = (info && info.usedNoOffset > 0) ? info.usedNoOffset : 0;
+      saveSettings(); updateBoLabel();
+    };
     panel.querySelector('[data-action="bo-dec"]').addEventListener("click", function () {
       var info = lastOverflowInfo;
-      var step = (info && info.k > 0) ? info.widths[info.k - 1] : 80;
-      settings.boundaryOffsetPx = Math.max(-600, Math.min(600, (settings.boundaryOffsetPx || 0) + step));
-      saveSettings(); updateBoLabel();
+      applyBoundaryStep((info && info.k > 0) ? info.widths[info.k - 1] : 80);
     });
     panel.querySelector('[data-action="bo-inc"]').addEventListener("click", function () {
       var info = lastOverflowInfo;
-      var step = (info && info.k < info.n) ? info.widths[info.k] : 80;
-      settings.boundaryOffsetPx = Math.max(-600, Math.min(600, (settings.boundaryOffsetPx || 0) - step));
-      saveSettings(); updateBoLabel();
+      applyBoundaryStep((info && info.k < info.n) ? -info.widths[info.k] : -80);
     });
     var hcValEl = panel.querySelector("#mrbb-hc-val");
     panel.querySelector('[data-action="hc-dec"]').addEventListener("click", function () {
@@ -1332,7 +1359,7 @@
         if (items[i].bookmark.isFolder) {
           (function (bm, anchor) {
             if (settings.folderOpenMode === "hover") {
-              anchor.addEventListener("mouseenter", function () { openDropdown(bm, anchor, "hover"); });
+              anchor.addEventListener("mouseenter", function () { if (!isDragging()) openDropdown(bm, anchor, "hover"); });
             } else {
               anchor.addEventListener("click", function (e) { e.preventDefault(); openDropdown(bm, anchor, "click"); });
             }
@@ -1400,6 +1427,14 @@
       if (raw.boundaryOffset && raw.boundaryOffsetPx === undefined) {
         s.boundaryOffsetPx = -raw.boundaryOffset * 80;
         s.boundaryOffset = 0;
+        chrome.storage.sync.set({ [STORAGE_KEY]: s });
+      }
+      // 境界計算を Chromium 実装準拠に刷新（layoutModelV2）。
+      // 旧モデルの誤差を打ち消すための補正値は不要になるためリセット
+      if (!raw.layoutModelV2) {
+        s.boundaryOffsetPx = 0;
+        s.boundaryCalibUsed = 0;
+        s.layoutModelV2 = true;
         chrome.storage.sync.set({ [STORAGE_KEY]: s });
       }
       return s;

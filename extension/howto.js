@@ -24,8 +24,59 @@
     language: "auto",
   };
   const $ = (id) => document.getElementById(id);
+  // chrome.* が無い環境（file:// で開いた場合など）でも表示だけはできるようにする
+  const hasChrome = typeof chrome !== "undefined" && !!chrome.storage;
 
+  // ===== ナビゲーション =====
+  function showNav(nav) {
+    const valid = ["howto", "settings", "contact"];
+    if (!valid.includes(nav)) nav = "howto";
+    document.querySelectorAll(".nav-item").forEach((el) => {
+      el.classList.toggle("active", el.dataset.nav === nav);
+    });
+    document.querySelectorAll(".panel").forEach((el) => {
+      el.classList.toggle("active", el.id === "sec-" + nav);
+    });
+    const url = new URL(location.href);
+    url.searchParams.set("nav", nav);
+    history.replaceState(null, "", url);
+  }
+
+  // ===== 言語 =====
+  // 設定が "auto" ならブラウザ UI 言語に従う。プロース（.l-ja/.l-en）と
+  // フォームラベル（data-i18n）の両方をこの言語で揃える
+  function resolveLang(setting) {
+    if (setting === "ja" || setting === "en") return setting;
+    const ui = hasChrome && chrome.i18n ? chrome.i18n.getUILanguage() : navigator.language || "en";
+    return ui.toLowerCase().startsWith("ja") ? "ja" : "en";
+  }
+
+  let dict = null;
+  async function loadDict(lang) {
+    if (!hasChrome) { dict = null; return; }
+    try {
+      dict = await (await fetch(chrome.runtime.getURL(`_locales/${lang}/messages.json`))).json();
+    } catch (e) { dict = null; }
+  }
+  function localize() {
+    document.querySelectorAll("[data-i18n]").forEach((el) => {
+      const key = el.dataset.i18n;
+      const m = dict?.[key]?.message || (hasChrome && chrome.i18n ? chrome.i18n.getMessage(key) : "");
+      if (m) el.textContent = m;
+    });
+  }
+
+  async function applyLanguage(setting) {
+    const lang = resolveLang(setting);
+    document.documentElement.dataset.lang = lang;
+    document.documentElement.lang = lang;
+    await loadDict(lang);
+    localize();
+  }
+
+  // ===== 設定の読み書き =====
   async function load() {
+    if (!hasChrome) return DEFAULT_SETTINGS;
     const data = await chrome.storage.sync.get(STORAGE_KEY);
     const s = { ...DEFAULT_SETTINGS, ...(data[STORAGE_KEY] ?? {}) };
     $("enabled").checked = s.enabled;
@@ -46,9 +97,11 @@
     $("folderOpenMode").value = s.folderOpenMode;
     $("hoverCloseMs").value = String(s.hoverCloseMs || 400);
     $("showCondition").value = s.showCondition;
+    return s;
   }
 
   async function save() {
+    if (!hasChrome) return;
     const s = {
       enabled: $("enabled").checked,
       fontSize: parseInt($("fontSize").value, 10) || 12,
@@ -73,35 +126,28 @@
     await chrome.storage.sync.set({ [STORAGE_KEY]: s });
   }
 
-  // language 設定が "auto" 以外なら該当ロケールの辞書を読み込んで優先使用
-  let dict = null;
-  async function loadDict() {
-    const data = await chrome.storage.sync.get(STORAGE_KEY);
-    const lang = (data[STORAGE_KEY] || {}).language || "auto";
-    if (lang === "auto") { dict = null; return; }
-    try {
-      dict = await (await fetch(chrome.runtime.getURL(`_locales/${lang}/messages.json`))).json();
-    } catch (e) { dict = null; }
-  }
-  function localize() {
-    document.querySelectorAll("[data-i18n]").forEach((el) => {
-      const key = el.dataset.i18n;
-      const m = dict?.[key]?.message || chrome.i18n.getMessage(key);
-      if (m) el.textContent = m;
-    });
-  }
+  async function init() {
+    const verEl = $("ver");
+    if (verEl) verEl.textContent = hasChrome && chrome.runtime?.getManifest ? chrome.runtime.getManifest().version : "";
 
-  document.addEventListener("DOMContentLoaded", async () => {
-    await loadDict();
-    localize();
-    await load();
-    document.querySelectorAll("input, select").forEach((el) => {
+    document.querySelectorAll(".nav-item").forEach((el) => {
+      el.addEventListener("click", () => showNav(el.dataset.nav));
+    });
+    showNav(new URLSearchParams(location.search).get("nav") || "howto");
+
+    const s = await load();
+    await applyLanguage(s.language || "auto");
+
+    document.querySelectorAll("#sec-settings input, #sec-settings select").forEach((el) => {
       el.addEventListener("change", save);
       el.addEventListener("input", save);
     });
-    document.getElementById("language").addEventListener("change", async () => {
-      await loadDict();
-      localize();
-    });
-  });
+    $("language").addEventListener("change", () => applyLanguage($("language").value));
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
 })();
