@@ -34,7 +34,7 @@ Chromeのブックマークバーに収まりきらない（`>>` に隠れてい
 
 ### Chrome ウェブストア（推奨）
 
-[Chrome ウェブストア](https://chromewebstore.google.com/)で **「Multi-Row Bookmark Bar」** を検索してインストールしてください。
+**[Chrome ウェブストアからインストール](https://chromewebstore.google.com/detail/multi-row-bookmark-bar/mldgoeafiafdojjhlfdlmdnmlegebcbf)**
 
 ### GitHubから直接（デベロッパーモード）
 

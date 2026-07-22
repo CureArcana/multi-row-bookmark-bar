@@ -34,7 +34,7 @@ A Chrome extension that shows the bookmarks hidden behind the `>>` overflow of C
 
 ### Chrome Web Store (recommended)
 
-Search for **"Multi-Row Bookmark Bar"** on the [Chrome Web Store](https://chromewebstore.google.com/) and install it.
+**[Install from the Chrome Web Store](https://chromewebstore.google.com/detail/multi-row-bookmark-bar/mldgoeafiafdojjhlfdlmdnmlegebcbf)**
 
 ### Directly from GitHub (developer mode)
 
