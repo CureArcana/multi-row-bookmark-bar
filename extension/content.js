@@ -1388,8 +1388,16 @@
     document.addEventListener("dragover", function (e) {
       if (!isAutohide() || !hostEl) return;
       var barBottom = (barHeightPx / (currentZoom || 1)) + 24;
-      if (e.clientY <= Math.max(40, barBottom)) { cancelHide(); showBar(); }
-      else if (barShown) scheduleHide();
+      if (barShown) {
+        // 表示中はバー領域内にいる間だけ維持する
+        if (e.clientY <= barBottom) cancelHide();
+        else scheduleHide();
+        return;
+      }
+      // 非表示中は「画面最上端までドラッグした」時だけ出す。バー高さぶんの広い
+      // 判定にすると、ページ上部のドロップ先（検索窓など）へテキストやリンクを
+      // ドラッグしただけでバーが降りてきて覆ってしまう
+      if (e.clientY <= Math.max(8, settings.revealEdgePx || 2)) { cancelHide(); showBar(); }
     }, true);
     // バー外クリックで即隠す
     document.addEventListener("mousedown", function (e) {
