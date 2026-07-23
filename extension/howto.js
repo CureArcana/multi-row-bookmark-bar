@@ -131,7 +131,10 @@
       barColor: $("barColor").dataset.custom ? $("barColor").value : "",
       showCondition: $("showCondition").value,
     };
-    await chrome.storage.sync.set({ [STORAGE_KEY]: s });
+    // このページに UI が無い内部キー（boundaryByDpr / boundaryCalibUsed /
+    // layoutModelV2 等）を消さないよう、既存値へのマージで保存する
+    const data = await chrome.storage.sync.get(STORAGE_KEY);
+    await chrome.storage.sync.set({ [STORAGE_KEY]: { ...(data[STORAGE_KEY] || {}), ...s } });
   }
 
   async function init() {

@@ -276,7 +276,7 @@
     "message": "\"Overflow only\" continues from the bookmarks hidden behind the native bar. \"All bookmarks\" renders everything in the extension bar."
   },
   "boundaryInfo": {
-    "message": "Corrects the estimate of how many bookmarks fit in the native bar. If the first extension item is duplicated or missing, adjust with the arrows. Stored in px, so it stays valid after reordering."
+    "message": "Corrects the estimate of how many bookmarks fit in the native bar. If the first extension item is duplicated or missing, adjust with the arrows. Stored in px, so it stays valid after reordering. The correction is saved per monitor (scale factor)."
   },
   "revealDelayInfo": {
     "message": "Wait time after touching the top edge before the bar appears. Increase to avoid accidental reveals (0 - 1000ms)."

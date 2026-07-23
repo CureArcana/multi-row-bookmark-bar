@@ -16,6 +16,7 @@
     barMode: "overflow", // "overflow": ネイティブバーの続きから / "independent": 全ブックマークを描画
     boundaryOffset: 0,    // (旧) アイテム数補正 — boundaryOffsetPx へ移行済み
     boundaryOffsetPx: 0,  // ネイティブバー使用可能幅の手動補正(px)。+ = 手前から表示。
+    boundaryByDpr: {},    // 境界補正のモニタ別保存 { "1": {px, used}, "1.5": {...} }
                           // px 保存なので並べ替えでどのブックマークが境界に来ても補正が安定する
     hoverCloseMs: 400,    // ホバー展開したフォルダを、カーソルが離れてから閉じるまでの時間(ms)
     barColor: "",         // バー背景色 (#rrggbb)。空 = 標準色（ライト/ダーク自動追従）
@@ -223,6 +224,18 @@
     return Math.ceil(w);
   }
 
+  // 境界補正はモニタの拡大率 (devicePixelRatio) ごとに保存・参照する。
+  // モニタのスケールによって Chrome UI のテキスト幅の丸めが変わり収容数の推定が
+  // ±1 個ズレるため、1つの補正値ではマルチモニタ環境に対応できない
+  // （同じウィンドウでも移動先のモニタによって境界が変わる）
+  function dprKey() { return String(Math.round(window.devicePixelRatio * 100) / 100); }
+  function getBoundaryCalib(sett) {
+    var e = (sett.boundaryByDpr || {})[dprKey()];
+    if (e && typeof e.px === "number") return e;
+    // 旧形式（単一値）へフォールバック — このモニタで調整し直せば個別値が保存される
+    return { px: sett.boundaryOffsetPx || 0, used: sett.boundaryCalibUsed || 0 };
+  }
+
   // overflow モード: row 0 = Chrome ネイティブバー（描画しない）、row 1+ = 拡張バー
   // 2パス: まずシェブロン無しで全アイテムが収まるか確認 → 収まればバー不要
   function calcOverflowLayout(bookmarks, windowWidth, sett) {
@@ -258,9 +271,10 @@
     // キャリブレーション時のバー使用幅(boundaryCalibUsed)との比で自動スケール
     // させ、ブックマークの並べ替え・増減後も補正が追従するようにする
     var base = fitK(maxXBase);
-    var offset = sett.boundaryOffsetPx || 0;
-    if (offset && sett.boundaryCalibUsed > 0 && base.used > 0) {
-      var ratio = Math.max(0.25, Math.min(4, base.used / sett.boundaryCalibUsed));
+    var calib = getBoundaryCalib(sett);
+    var offset = calib.px;
+    if (offset && calib.used > 0 && base.used > 0) {
+      var ratio = Math.max(0.25, Math.min(4, base.used / calib.used));
       offset = Math.round(offset * ratio);
     }
     var fit = fitK(maxXBase - offset);
@@ -1060,7 +1074,7 @@
       '<div class="mrbb-settings-row"><span>' + t("folderOpen") + ' <span class="mrbb-info" data-info="folderOpenInfo" title="' + t("folderOpenInfo").replace(/"/g, "&quot;") + '">&#9432;</span></span><select id="mrbb-fo-sel" style="border:1px solid #dadce0;border-radius:3px;padding:2px 4px;font-size:12px;"><option value="hover"' + (settings.folderOpenMode === "hover" ? " selected" : "") + '>' + t("hover") + '</option><option value="click"' + (settings.folderOpenMode === "click" ? " selected" : "") + '>' + t("click") + '</option></select></div>' +
       '<div class="mrbb-settings-row"><span>' + t("barMode") + ' <span class="mrbb-info" data-info="barModeInfo" title="' + t("barModeInfo").replace(/"/g, "&quot;") + '">&#9432;</span></span><select id="mrbb-bm-sel" style="border:1px solid #dadce0;border-radius:3px;padding:2px 4px;font-size:12px;"><option value="overflow"' + (settings.barMode === "overflow" ? " selected" : "") + '>' + t("overflowOnly") + '</option><option value="independent"' + (settings.barMode === "independent" ? " selected" : "") + '>' + t("allBookmarks") + '</option></select></div>' +
       '<div class="mrbb-settings-row"><span>' + t("displayBehavior") + ' <span class="mrbb-info" data-info="displayBehaviorDesc" title="' + t("displayBehaviorDesc").replace(/"/g, "&quot;") + '">&#9432;</span></span><select id="mrbb-db-sel" title="' + t("pushWarning") + '" style="border:1px solid #dadce0;border-radius:3px;padding:2px 4px;font-size:12px;"><option value="autohide"' + (settings.displayBehavior !== "push" ? " selected" : "") + '>' + t("autohideOption") + '</option><option value="push"' + (settings.displayBehavior === "push" ? " selected" : "") + ' title="' + t("pushWarning") + '">' + t("pushOption") + '</option></select></div>' +
-      '<div class="mrbb-settings-row"><span>' + t("boundaryAdjust") + ' <span class="mrbb-info" data-info="boundaryInfo" title="' + t("boundaryInfo").replace(/"/g, "&quot;") + '">&#9432;</span></span><div class="mrbb-settings-fontsize"><button data-action="bo-dec" title="' + t("boundaryEarlier") + '">◀</button><span id="mrbb-bo-val">' + (settings.boundaryOffsetPx || 0) + 'px</span><button data-action="bo-inc" title="' + t("boundaryLater") + '">▶</button></div></div>' +
+      '<div class="mrbb-settings-row"><span>' + t("boundaryAdjust") + ' <span class="mrbb-info" data-info="boundaryInfo" title="' + t("boundaryInfo").replace(/"/g, "&quot;") + '">&#9432;</span></span><div class="mrbb-settings-fontsize"><button data-action="bo-dec" title="' + t("boundaryEarlier") + '">◀</button><span id="mrbb-bo-val">' + getBoundaryCalib(settings).px + 'px</span><button data-action="bo-inc" title="' + t("boundaryLater") + '">▶</button></div></div>' +
       '<div class="mrbb-settings-row"><span>' + t("hoverCloseDelay") + ' <span class="mrbb-info" data-info="hoverCloseDelayDesc" title="' + t("hoverCloseDelayDesc").replace(/"/g, "&quot;") + '">&#9432;</span></span><div class="mrbb-settings-fontsize"><button data-action="hc-dec">-</button><span id="mrbb-hc-val">' + (settings.hoverCloseMs !== undefined ? settings.hoverCloseMs : 400) + 'ms</span><button data-action="hc-inc">+</button></div></div>' +
       '<div class="mrbb-settings-row"><span>' + t("revealEdge") + ' <span class="mrbb-info" data-info="revealEdgeDesc" title="' + t("revealEdgeDesc").replace(/"/g, "&quot;") + '">&#9432;</span></span><div class="mrbb-settings-fontsize"><button data-action="re-dec">-</button><span id="mrbb-re-val">' + (settings.revealEdgePx || 2) + 'px</span><button data-action="re-inc">+</button></div></div>' +
       '<div class="mrbb-settings-row"><span>' + t("revealDelay") + ' <span class="mrbb-info" data-info="revealDelayInfo" title="' + t("revealDelayInfo").replace(/"/g, "&quot;") + '">&#9432;</span></span><div class="mrbb-settings-fontsize"><button data-action="rd-dec">-</button><span id="mrbb-rd-val">' + (settings.revealDelayMs || 0) + 'ms</span><button data-action="rd-inc">+</button></div></div>' +
@@ -1119,12 +1133,18 @@
     // (effectiveOffset) を起点にし、その時点のバー使用幅をキャリブレーション
     // 基準として保存 → 以後の並べ替え・増減には比率スケールで自動追従する
     var boValEl = panel.querySelector("#mrbb-bo-val");
-    var updateBoLabel = function () { if (boValEl) boValEl.textContent = (settings.boundaryOffsetPx || 0) + "px"; };
+    var updateBoLabel = function () { if (boValEl) boValEl.textContent = getBoundaryCalib(settings).px + "px"; };
     var applyBoundaryStep = function (step) {
       var info = lastOverflowInfo;
-      var current = (info && info.effectiveOffset !== undefined) ? info.effectiveOffset : (settings.boundaryOffsetPx || 0);
-      settings.boundaryOffsetPx = Math.max(-600, Math.min(600, current + step));
-      settings.boundaryCalibUsed = (info && info.usedNoOffset > 0) ? info.usedNoOffset : 0;
+      var current = (info && info.effectiveOffset !== undefined) ? info.effectiveOffset : getBoundaryCalib(settings).px;
+      var px = Math.max(-600, Math.min(600, current + step));
+      var used = (info && info.usedNoOffset > 0) ? info.usedNoOffset : 0;
+      // このモニタ（拡大率）専用の補正として保存。旧形式の単一値も他モニタの
+      // フォールバック用に併記更新する
+      if (!settings.boundaryByDpr) settings.boundaryByDpr = {};
+      settings.boundaryByDpr[dprKey()] = { px: px, used: used };
+      settings.boundaryOffsetPx = px;
+      settings.boundaryCalibUsed = used;
       saveSettings(); updateBoLabel();
     };
     panel.querySelector('[data-action="bo-dec"]').addEventListener("click", function () {
@@ -1402,17 +1422,28 @@
 
   function adjustFixedElements(barPx) {
     if (barPx <= 0 || !document.body) return;
+    // absolute 要素は「positioned な祖先を持たない = ビューポート直付け」のものだけ
+    // 押し下げ対象にする（YouTube の ytd-app が典型: position:absolute; top:0 のため
+    // body の margin では動かない）。body 自体が positioned なサイトでは absolute は
+    // body と一緒に動くので対象外
+    var bodyStatic = getComputedStyle(document.body).position === "static";
     var els = document.body.getElementsByTagName("*");
     var n = Math.min(els.length, MAX_SCAN_ELEMENTS);
     for (var i = 0; i < n; i++) {
       var el = els[i];
       if (el.hasAttribute(FIXED_MARK)) continue;
       var cs = getComputedStyle(el);
-      if (cs.position !== "fixed" && cs.position !== "sticky") continue;
+      var isFixed = cs.position === "fixed";
+      var isSticky = cs.position === "sticky";
+      var isViewportAbs = cs.position === "absolute" && bodyStatic && el.offsetParent === document.body;
+      if (!isFixed && !isSticky && !isViewportAbs) continue;
       var top = parseFloat(cs.top);
       if (isNaN(top) || top < 0 || top >= barPx) continue;
       var rect = el.getBoundingClientRect();
-      if (rect.height === 0 || rect.top >= barPx) continue; // 非表示 or 既にバーより下
+      if (rect.height === 0) continue; // 非表示
+      // sticky は静止時の rect がバーより下でも、スクロール時に top 位置へ貼り付いて
+      // バーの下に潜り込む（YouTube のチップバー等）ため rect による除外はしない
+      if (!isSticky && rect.top >= barPx) continue; // 既にバーより下
       var rec = { el: el, original: el.style.top, originalMaxHeight: null };
       el.setAttribute(FIXED_MARK, "1");
       el.style.setProperty("top", (top + barPx) + "px", "important");
@@ -1649,6 +1680,21 @@
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(function () { render(); }, 150);
     });
+
+    // モニタ間の移動（拡大率の変化）で再描画する。ウィンドウの DIP サイズが同じ
+    // 場合 resize が発火しないため、resolution メディアクエリで検知する
+    function watchDprChange() {
+      try {
+        var mq = matchMedia("(resolution: " + window.devicePixelRatio + "dppx)");
+        var onChange = function () {
+          mq.removeEventListener("change", onChange);
+          render();
+          watchDprChange(); // 新しい拡大率で監視を張り直す
+        };
+        mq.addEventListener("change", onChange);
+      } catch (e) { /* ignore */ }
+    }
+    watchDprChange();
 
     chrome.runtime.onMessage.addListener(function (msg) {
       if (msg.type === "MRBB_REFRESH") render();
