@@ -28,7 +28,10 @@
   q.placeholder = t("searchGoogle") || "Search Google";
   document.title = t("newTabTitle") || "New Tab";
   document.body.classList.add("ready");
-  q.focus();
+  // 新しいタブを開いた直後はアドレスバーにフォーカスがある（document.hasFocus() が
+  // false）。そこで focus() するとアドレスバーへの入力・確定が横取りされて
+  // 最初の検索がキャンセルされるため、ページ側にフォーカスがある時だけ移す
+  if (document.hasFocus()) q.focus();
 
   // 初回のみ: Chrome が出す「変更を保持 / 元に戻す」確認バブルの説明カードを表示。
   // バブル自体は Chrome の機能で拡張からは消せないため、選び方をその場で案内する

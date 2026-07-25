@@ -1430,28 +1430,17 @@
 
   function adjustFixedElements(barPx) {
     if (barPx <= 0 || !document.body) return;
-    // absolute 要素は「positioned な祖先を持たない = ビューポート直付け」のものだけ
-    // 押し下げ対象にする（YouTube の ytd-app が典型: position:absolute; top:0 のため
-    // body の margin では動かない）。body 自体が positioned なサイトでは absolute は
-    // body と一緒に動くので対象外
-    var bodyStatic = getComputedStyle(document.body).position === "static";
     var els = document.body.getElementsByTagName("*");
     var n = Math.min(els.length, MAX_SCAN_ELEMENTS);
     for (var i = 0; i < n; i++) {
       var el = els[i];
       if (el.hasAttribute(FIXED_MARK)) continue;
       var cs = getComputedStyle(el);
-      var isFixed = cs.position === "fixed";
-      var isSticky = cs.position === "sticky";
-      var isViewportAbs = cs.position === "absolute" && bodyStatic && el.offsetParent === document.body;
-      if (!isFixed && !isSticky && !isViewportAbs) continue;
+      if (cs.position !== "fixed" && cs.position !== "sticky") continue;
       var top = parseFloat(cs.top);
       if (isNaN(top) || top < 0 || top >= barPx) continue;
       var rect = el.getBoundingClientRect();
-      if (rect.height === 0) continue; // 非表示
-      // sticky は静止時の rect がバーより下でも、スクロール時に top 位置へ貼り付いて
-      // バーの下に潜り込む（YouTube のチップバー等）ため rect による除外はしない
-      if (!isSticky && rect.top >= barPx) continue; // 既にバーより下
+      if (rect.height === 0 || rect.top >= barPx) continue; // 非表示 or 既にバーより下
       var rec = { el: el, original: el.style.top, originalMaxHeight: null };
       el.setAttribute(FIXED_MARK, "1");
       el.style.setProperty("top", (top + barPx) + "px", "important");
